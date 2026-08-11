@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Http\Controllers\Tenant\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Models\Staff;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class NewPasswordController extends Controller
+{
+    public function create(Request $request): View
+    {
+        return view('tenant.auth.reset-password', [
+            'branchName' => tenant('name'),
+            'request' => $request,
+        ]);
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        $status = Password::broker('staff')->reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (Staff $staff) use ($request): void {
+                $staff->forceFill([
+                    'password' => Hash::make($request->password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                event(new PasswordReset($staff));
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('tenant.login')->with('status', __($status))
+            : back()->withInput($request->only('email'))
+                ->withErrors(['email' => __($status)]);
+    }
+}

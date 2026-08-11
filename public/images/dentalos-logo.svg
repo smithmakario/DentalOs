@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="DentalOs">
+  <defs>
+    <linearGradient id="dentalos-grad" x1="8" y1="6" x2="40" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0066FF"/>
+      <stop offset="1" stop-color="#0050CB"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="14" fill="#E5EEFF"/>
+  <path d="M24 8C17.5 8 13 12.2 13 17.5c0 4.2 1.8 7.1 3.4 9.8 1.4 2.3 2.6 4.3 2.6 7.2 0 2.8 2.2 4.5 5 4.5s5-1.7 5-4.5c0-2.9 1.2-4.9 2.6-7.2 1.6-2.7 3.4-5.6 3.4-9.8C35 12.2 30.5 8 24 8Z" fill="url(#dentalos-grad)"/>
+  <circle cx="33" cy="15" r="4" fill="#6FF7EE" stroke="#006A65" stroke-width="1.5"/>
+  <path d="M33 13.5v3M31.5 15h3" stroke="#006A65" stroke-width="1.2" stroke-linecap="round"/>
+</svg>
