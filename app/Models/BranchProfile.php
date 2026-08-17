@@ -11,6 +11,7 @@ class BranchProfile extends Model
 
     protected $fillable = [
         'name',
+        'branch_prefix',
         'description',
         'logo_path',
         'contact_email',

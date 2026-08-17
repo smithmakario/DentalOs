@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\StaffRole;
+use Database\Factories\StaffMemberFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StaffMember extends Model
 {
-    /** @use HasFactory<\Database\Factories\StaffMemberFactory> */
+    /** @use HasFactory<StaffMemberFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -57,5 +58,20 @@ class StaffMember extends Model
     public function getFullNameAttribute(): string
     {
         return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    public function performanceReviews(): HasMany
+    {
+        return $this->hasMany(StaffPerformanceReview::class, 'staff_member_id');
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(StaffAttendance::class);
+    }
+
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(StaffLeaveRequest::class);
     }
 }

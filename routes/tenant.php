@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\PatientAuthController;
+use App\Http\Controllers\Api\PatientDashboardController;
 use App\Http\Controllers\Tenant\AppointmentController;
 use App\Http\Controllers\Tenant\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Tenant\Auth\NewPasswordController;
@@ -78,5 +80,18 @@ Route::middleware([
 
         Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
             ->name('tenant.logout');
+    });
+});
+
+Route::middleware([
+    'api',
+    InitializeTenancyByDomain::class,
+    PreventAccessFromCentralDomains::class,
+])->prefix('api')->group(function () {
+    Route::post('/login', [PatientAuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/dashboard', [PatientDashboardController::class, 'index']);
+        // Future endpoints: appointments, records, etc.
     });
 });

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Patient;
 use App\Models\Staff;
 use App\Models\User;
 
@@ -32,6 +33,11 @@ return [
             'driver' => 'session',
             'provider' => 'staff',
         ],
+
+        'patient' => [
+            'driver' => 'sanctum',
+            'provider' => 'patients',
+        ],
     ],
 
     /*
@@ -49,6 +55,11 @@ return [
         'staff' => [
             'driver' => 'eloquent',
             'model' => Staff::class,
+        ],
+
+        'patients' => [
+            'driver' => 'eloquent',
+            'model' => Patient::class,
         ],
     ],
 

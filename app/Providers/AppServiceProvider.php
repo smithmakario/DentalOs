@@ -11,6 +11,7 @@ use App\Models\PatientDocument;
 use App\Models\Staff;
 use App\Models\TreatmentPlan;
 use App\Models\TreatmentPlanOption;
+use App\Observers\PatientObserver;
 use App\Policies\AppointmentPolicy;
 use App\Policies\AuditLogPolicy;
 use App\Policies\ClinicServicePolicy;
@@ -44,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ClinicService::class, ClinicServicePolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(Staff::class, StaffPolicy::class);
+
+        Patient::observe(PatientObserver::class);
 
         View::composer(['layouts.tenant-navigation', 'layouts.tenant'], function ($view): void {
             $staff = Auth::guard('staff')->user();

@@ -91,5 +91,16 @@ class Appointment extends Model
 
         return $query->exists();
     }
-}
 
+    /** @param Builder<Appointment> $query */
+    public function scopeUpcoming(Builder $query): Builder
+    {
+        return $query
+            ->whereNotIn('status', [
+                AppointmentStatus::Cancelled->value,
+                AppointmentStatus::NoShow->value,
+                AppointmentStatus::Completed->value,
+            ])
+            ->where('scheduled_at', '>=', now());
+    }
+}

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\InvoiceStatus;
+use Database\Factories\InvoiceFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
 {
-    /** @use HasFactory<\Database\Factories\InvoiceFactory> */
+    /** @use HasFactory<InvoiceFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -71,5 +73,14 @@ class Invoice extends Model
     {
         return $this->status !== InvoiceStatus::Void
             && $this->status !== InvoiceStatus::Paid;
+    }
+
+    /** @param Builder<Invoice> $query */
+    public function scopeUnpaid(Builder $query): Builder
+    {
+        return $query->whereNotIn('status', [
+            InvoiceStatus::Paid->value,
+            InvoiceStatus::Void->value,
+        ]);
     }
 }
