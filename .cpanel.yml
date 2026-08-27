@@ -1,0 +1,8 @@
+---
+deployment:
+  tasks:
+    - echo "CPANEL DEPLOYMENT TEST"
+    - php -v
+    - composer --version
+    - node -v
+    - npm -v
