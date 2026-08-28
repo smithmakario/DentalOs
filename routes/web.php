@@ -6,6 +6,7 @@ use App\Http\Controllers\Central\BranchController;
 use App\Http\Controllers\Central\ClinicController;
 use App\Http\Controllers\Central\DashboardController as CentralDashboardController;
 use App\Http\Controllers\Central\RegistrationRequestController;
+use App\Http\Controllers\Central\PaystackController;
 use App\Http\Controllers\Central\PlatformPaymentSettingController;
 use App\Http\Controllers\Central\StaffMemberController;
 use App\Http\Controllers\Central\SubscriptionController;
