@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('staff_attendances', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('staff_member_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('staff_member_id')->index();
             $table->date('date');
             $table->timestamp('clock_in_time')->nullable();
             $table->timestamp('clock_out_time')->nullable();
@@ -21,7 +21,7 @@ return new class extends Migration
 
         Schema::create('staff_leave_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('staff_member_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('staff_member_id')->index();
             $table->date('start_date');
             $table->date('end_date');
             $table->string('leave_type'); // sick, annual, unpaid
@@ -32,8 +32,8 @@ return new class extends Migration
 
         Schema::create('staff_performance_reviews', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('staff_member_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('reviewer_id')->constrained('staff_members')->cascadeOnDelete();
+            $table->foreignId('staff_member_id')->index();
+            $table->foreignId('reviewer_id')->index();
             $table->date('review_date');
             $table->integer('rating'); // 1-5
             $table->text('comments')->nullable();
