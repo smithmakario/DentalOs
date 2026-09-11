@@ -10,6 +10,8 @@ use App\Http\Controllers\Tenant\Auth\NewPasswordController;
 use App\Http\Controllers\Tenant\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Tenant\ClinicServiceController;
 use App\Http\Controllers\Tenant\DashboardController;
+use App\Http\Controllers\Tenant\InventoryItemController;
+use App\Http\Controllers\Tenant\InventoryTransactionController;
 use App\Http\Controllers\Tenant\InvoiceController;
 use App\Http\Controllers\Tenant\InvoicePaymentController;
 use App\Http\Controllers\Tenant\PatientController;
@@ -77,6 +79,12 @@ Route::middleware([
         Route::resource('appointments', AppointmentController::class)->names('tenant.appointments');
         Route::patch('appointments/{appointment}/status', [AppointmentController::class, 'updateStatus'])
             ->name('tenant.appointments.status');
+
+        Route::resource('inventory', InventoryItemController::class)->names('tenant.inventory');
+        Route::post('inventory/{inventory}/batches', [InventoryTransactionController::class, 'storeBatch'])
+            ->name('tenant.inventory.batches.store');
+        Route::post('inventory/{inventory}/transactions', [InventoryTransactionController::class, 'store'])
+            ->name('tenant.inventory.transactions.store');
 
         Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
             ->name('tenant.logout');

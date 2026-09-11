@@ -2,28 +2,29 @@
 
 namespace App\Http\Requests\Tenant;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Enums\InventoryItemType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreInventoryItemRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'inventory_category_id' => ['required', 'exists:inventory_categories,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'sku' => ['nullable', 'string', 'max:255'],
+            'type' => ['required', Rule::enum(InventoryItemType::class)],
+            'unit_measure' => ['required', 'string', 'max:50'],
+            'min_stock_level' => ['required', 'numeric', 'min:0'],
+            'current_stock_level' => ['required', 'numeric', 'min:0'],
+            'expiry_date' => ['nullable', 'date'],
+            'is_active' => ['boolean'],
         ];
     }
 }

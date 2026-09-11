@@ -13,6 +13,7 @@ class InventoryTransaction extends Model
 
     protected $fillable = [
         'inventory_item_id',
+        'inventory_batch_id',
         'type',
         'quantity',
         'notes',
@@ -30,6 +31,11 @@ class InventoryTransaction extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(InventoryItem::class, 'inventory_item_id');
+    }
+
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(InventoryBatch::class, 'inventory_batch_id');
     }
 
     public function staffMember(): BelongsTo

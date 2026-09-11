@@ -2,28 +2,24 @@
 
 namespace App\Http\Requests\Tenant;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Enums\InventoryTransactionType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreInventoryTransactionRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'inventory_batch_id' => ['nullable', 'exists:inventory_batches,id'],
+            'type' => ['required', Rule::enum(InventoryTransactionType::class)],
+            'quantity' => ['required', 'numeric', 'min:0.01'],
+            'notes' => ['nullable', 'string'],
         ];
     }
 }
