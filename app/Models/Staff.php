@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+
 use App\Enums\StaffPermission;
 use App\Enums\StaffRole;
 use App\Notifications\StaffResetPassword;
@@ -17,12 +19,13 @@ use Illuminate\Support\Facades\Storage;
 
 class Staff extends Authenticatable implements CanResetPasswordContract
 {
+    use BelongsToTenant;
     /** @use HasFactory<\Database\Factories\StaffFactory> */
     use CanResetPassword;
     use HasFactory;
     use Notifiable;
 
-    protected $table = 'users';
+    protected $table = 'tenant_users';
 
     protected $fillable = [
         'organization_staff_id',

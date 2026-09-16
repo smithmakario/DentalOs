@@ -56,10 +56,12 @@ class InventoryTest extends TenantTestCase
                 'type' => InventoryItemType::Medication->value,
                 'unit_measure' => 'tablet',
                 'min_stock_level' => 50,
+                'current_stock_level' => 100,
+                'lot_number' => 'BATCH-123',
                 'is_active' => true,
             ]);
 
-        $response->assertRedirect();
+        $response->assertSessionHasNoErrors(); $response->assertRedirect();
 
         $this->tenant->run(function (): void {
             $this->assertDatabaseHas('inventory_items', ['name' => 'Ibuprofen 400mg']);

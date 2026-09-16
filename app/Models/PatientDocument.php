@@ -5,11 +5,13 @@ namespace App\Models;
 use App\Enums\PatientDocumentCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
 class PatientDocument extends Model
 {
+    use BelongsToTenant;
     /** @use HasFactory<\Database\Factories\PatientDocumentFactory> */
     use HasFactory;
 

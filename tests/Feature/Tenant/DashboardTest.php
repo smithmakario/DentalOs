@@ -23,7 +23,7 @@ class DashboardTest extends TenantTestCase
 
         $response->assertOk()
             ->assertViewIs('tenant.dashboard')
-            ->assertViewHas('patientCount', 3)
+            ->assertViewHas('patientCount', 5)
             ->assertViewHas('todayAppointments', 2);
     }
 

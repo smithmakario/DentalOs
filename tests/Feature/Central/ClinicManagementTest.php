@@ -210,7 +210,7 @@ class ClinicManagementTest extends TestCase
             'admin_name' => 'Clinic Admin',
             'admin_email' => 'admin@bright.test',
             'admin_password' => 'password',
-            'logo' => UploadedFile::fake()->image('logo.png', 512, 512),
+            'logo' => UploadedFile::fake()->create('logo.png', 100, 'image/png'),
         ]);
 
         $organization = Organization::query()->where('name', 'Bright Dental')->firstOrFail();

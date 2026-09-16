@@ -31,7 +31,7 @@ class StaffManagementTest extends TenantTestCase
             'license_number' => 'MDCN-12345',
             'years_of_experience' => 8,
             'is_active' => true,
-            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
+            'avatar' => UploadedFile::fake()->create('avatar.jpg', 100, 'image/jpeg'),
         ]);
 
         $response->assertRedirect();

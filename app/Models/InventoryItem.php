@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventoryItem extends Model
 {
+    use BelongsToTenant;
     use HasFactory;
 
     protected $fillable = [
@@ -74,7 +76,14 @@ class InventoryItem extends Model
         $query->active()
             ->whereHas('activeBatches')
             ->withSum('activeBatches as total_stock', 'current_quantity')
-            ->havingRaw('total_stock <= min_stock_level AND total_stock > 0');
+            ->where(
+                InventoryBatch::selectRaw('COALESCE(SUM(current_quantity), 0)')
+                    ->whereColumn('inventory_item_id', 'inventory_items.id')
+                    ->where('is_active', true)
+                    ->where('current_quantity', '>', 0),
+                '<=',
+                \Illuminate\Support\Facades\DB::raw('inventory_items.min_stock_level')
+            );
     }
 
     /**

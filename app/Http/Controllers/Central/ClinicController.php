@@ -31,9 +31,7 @@ class ClinicController extends Controller
         $organizationsQuery = $this->organizationsQueryFor($request->user());
 
         $totalClinics = (clone $organizationsQuery)->count();
-
-        $organizationIds = (clone $organizationsQuery)->pluck('id');
-
+        $organizationIds = (clone $organizationsQuery)->pluck('organizations.id');
         $totalBranches = Tenant::query()
             ->when($organizationIds->isNotEmpty(), fn (Builder $query) => $query->whereIn('organization_id', $organizationIds))
             ->when($organizationIds->isEmpty(), fn (Builder $query) => $query->whereRaw('1 = 0'))

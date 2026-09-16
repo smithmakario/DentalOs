@@ -64,13 +64,6 @@ class DatabaseSeeder extends Seeder
         $tenant = Tenant::query()->find($tenantId);
 
         if ($tenant === null) {
-            $databaseName = config('tenancy.database.prefix').$tenantId.config('tenancy.database.suffix');
-            try {
-                DB::statement('DROP DATABASE IF EXISTS `'.$databaseName.'`');
-            } catch (\Throwable) {
-                // DB user may not have DROP privilege; tenant creation will handle DB setup.
-            }
-
             $tenant = Tenant::query()->create([
                 'id' => $tenantId,
                 'organization_id' => $organization->id,
@@ -95,13 +88,6 @@ class DatabaseSeeder extends Seeder
         $uptown = Tenant::query()->find($uptownId);
 
         if ($uptown === null) {
-            $databaseName = config('tenancy.database.prefix').$uptownId.config('tenancy.database.suffix');
-            try {
-                DB::statement('DROP DATABASE IF EXISTS `'.$databaseName.'`');
-            } catch (\Throwable) {
-                // DB user may not have DROP privilege; tenant creation will handle DB setup.
-            }
-
             $uptown = Tenant::query()->create([
                 'id' => $uptownId,
                 'organization_id' => $organization->id,

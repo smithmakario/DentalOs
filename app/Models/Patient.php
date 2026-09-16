@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+
 use App\Enums\PaymentMethod;
 use Database\Factories\PatientFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Patient extends Authenticatable
 {
+    use BelongsToTenant;
     /** @use HasFactory<PatientFactory> */
     use HasApiTokens, HasFactory;
 

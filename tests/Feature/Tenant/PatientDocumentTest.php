@@ -25,7 +25,7 @@ class PatientDocumentTest extends TenantTestCase
             'title' => 'Panoramic X-Ray',
             'description' => 'Initial diagnostic image',
             'recorded_at' => now()->toDateString(),
-            'file' => UploadedFile::fake()->image('xray.png', 1200, 800),
+            'file' => UploadedFile::fake()->create('xray.png', 100, 'image/png'),
         ]);
 
         $response->assertRedirect($this->tenantUrl('/patients/'.$patient->id));

@@ -29,11 +29,15 @@ class AppointmentTest extends TenantTestCase
 
         $scheduledAt = now()->addDays(1)->setHour(10)->setMinute(0)->setSecond(0);
 
+        $clinicService = $this->tenant->run(fn () => \App\Models\ClinicService::factory()->create());
+
         $response = $this->actingAs($staff, 'staff')->post($this->tenantUrl('/appointments'), [
             'patient_id' => $patient->id,
             'provider_id' => $dentist->id,
+            'service_id' => $clinicService->id,
             'title' => 'Routine Checkup',
-            'scheduled_at' => $scheduledAt->toDateTimeString(),
+            'scheduled_date' => $scheduledAt->toDateString(),
+            'scheduled_time' => $scheduledAt->format('H:i'),
             'duration_minutes' => 30,
             'status' => AppointmentStatus::Scheduled->value,
             'notes' => 'First visit',
@@ -45,11 +49,11 @@ class AppointmentTest extends TenantTestCase
 
         $response->assertRedirect($this->tenantUrl("/appointments/{$appointmentId}"));
 
-        $this->tenant->run(function () use ($patient, $dentist): void {
+        $this->tenant->run(function () use ($patient, $dentist, $clinicService): void {
             $appointment = Appointment::query()->where('patient_id', $patient->id)->first();
             $this->assertNotNull($appointment);
             $this->assertSame($dentist->id, $appointment->provider_id);
-            $this->assertSame('Routine Checkup', $appointment->title);
+            $this->assertSame($clinicService->name, $appointment->title);
             $this->assertSame(AppointmentStatus::Scheduled, $appointment->status);
         });
     }
