@@ -24,7 +24,7 @@ class UpdateClinicServiceRequest extends FormRequest
         $service = $this->route('clinic_service');
 
         return [
-            'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('clinic_services', 'code')->ignore($service)],
+            'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('clinic_services', 'code')->where('tenant_id', tenant('id'))->ignore($service)],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'category' => ['required', 'string', 'max:100'],

@@ -16,7 +16,7 @@ class StoreInventoryTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'inventory_batch_id' => ['nullable', 'exists:inventory_batches,id'],
+            'inventory_batch_id' => ['nullable', Rule::exists('inventory_batches', 'id')->where('tenant_id', tenant('id'))],
             'type' => ['required', Rule::enum(InventoryTransactionType::class)],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'notes' => ['nullable', 'string'],

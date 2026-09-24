@@ -19,7 +19,7 @@ class StoreClinicServiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('clinic_services', 'code')],
+            'code' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('clinic_services', 'code')->where('tenant_id', tenant('id'))],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'category' => ['required', 'string', 'max:100'],

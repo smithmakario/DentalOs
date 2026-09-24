@@ -16,7 +16,7 @@ class StoreInventoryItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'inventory_category_id' => ['required', 'exists:inventory_categories,id'],
+            'inventory_category_id' => ['required', Rule::exists('inventory_categories', 'id')->where('tenant_id', tenant('id'))],
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['nullable', 'string', 'max:255'],
             'type' => ['required', Rule::enum(InventoryItemType::class)],

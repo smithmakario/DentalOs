@@ -55,8 +55,8 @@ class StoreTreatmentPlanRequest extends FormRequest
     protected function optionRules(): array
     {
         return [
-            'patient_id' => ['required', Rule::exists(Patient::class, 'id')],
-            'provider_id' => ['required', Rule::exists(Staff::class, 'id')],
+            'patient_id' => ['required', Rule::exists(Patient::class, 'id')->where('tenant_id', tenant('id'))],
+            'provider_id' => ['required', Rule::exists(Staff::class, 'id')->where('tenant_id', tenant('id'))],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'status' => ['required', Rule::enum(TreatmentPlanStatus::class)],
@@ -64,7 +64,7 @@ class StoreTreatmentPlanRequest extends FormRequest
             'options.*.name' => ['required', 'string', 'max:255'],
             'options.*.description' => ['nullable', 'string', 'max:2000'],
             'options.*.items' => ['required', 'array', 'min:1'],
-            'options.*.items.*.clinic_service_id' => ['nullable', Rule::exists(ClinicService::class, 'id')],
+            'options.*.items.*.clinic_service_id' => ['nullable', Rule::exists(ClinicService::class, 'id')->where('tenant_id', tenant('id'))],
             'options.*.items.*.name' => ['required', 'string', 'max:255'],
             'options.*.items.*.procedure_code' => ['nullable', 'string', 'max:50'],
             'options.*.items.*.description' => ['nullable', 'string', 'max:1000'],

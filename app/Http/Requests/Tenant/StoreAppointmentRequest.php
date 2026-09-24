@@ -49,9 +49,9 @@ class StoreAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'patient_id' => ['required', Rule::exists(Patient::class, 'id')],
-            'provider_id' => ['required', Rule::exists(Staff::class, 'id')],
-            'service_id' => ['required', Rule::exists(ClinicService::class, 'id')],
+            'patient_id' => ['required', Rule::exists(Patient::class, 'id')->where('tenant_id', tenant('id'))],
+            'provider_id' => ['required', Rule::exists(Staff::class, 'id')->where('tenant_id', tenant('id'))],
+            'service_id' => ['required', Rule::exists(ClinicService::class, 'id')->where('tenant_id', tenant('id'))],
             'scheduled_date' => ['required', 'date', 'after_or_equal:today'],
             'scheduled_time' => ['required', 'date_format:H:i'],
             'scheduled_at' => ['required', 'date', 'after:now'],

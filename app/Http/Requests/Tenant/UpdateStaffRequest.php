@@ -29,7 +29,7 @@ class UpdateStaffRequest extends FormRequest
         return [
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($member->id)],
+            'email' => ['required', 'email', 'max:255', Rule::unique('tenant_users', 'email')->where('tenant_id', tenant('id'))->ignore($member->id)],
             'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['nullable', 'string', Password::defaults()],
             'role' => [

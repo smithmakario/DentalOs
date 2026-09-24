@@ -23,8 +23,8 @@ class UpdateInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'patient_id' => ['required', 'integer', 'exists:patients,id'],
-            'appointment_id' => ['nullable', 'integer', 'exists:appointments,id'],
+            'patient_id' => ['required', 'integer', Rule::exists('patients', 'id')->where('tenant_id', tenant('id'))],
+            'appointment_id' => ['nullable', 'integer', Rule::exists('appointments', 'id')->where('tenant_id', tenant('id'))],
             'tax' => ['nullable', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -35,7 +35,7 @@ class UpdateInvoiceRequest extends FormRequest
             'items.*.description' => ['required', 'string', 'max:255'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'items.*.treatment_id' => ['nullable', 'integer', 'exists:treatments,id'],
+            'items.*.treatment_id' => ['nullable', 'integer', Rule::exists('treatments', 'id')->where('tenant_id', tenant('id'))],
         ];
     }
 

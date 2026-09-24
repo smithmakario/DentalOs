@@ -23,7 +23,7 @@ class StoreStaffRequest extends FormRequest
         return [
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'email' => ['required', 'email', 'max:255', Rule::unique('tenant_users', 'email')->where('tenant_id', tenant('id'))],
             'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['required', 'string', Password::defaults()],
             'role' => [
