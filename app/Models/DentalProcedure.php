@@ -8,7 +8,6 @@ use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class DentalProcedure extends Model
 {
-    use BelongsToTenant;
     use HasFactory;
 
     protected $fillable = [
