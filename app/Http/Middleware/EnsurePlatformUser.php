@@ -21,14 +21,16 @@ class EnsurePlatformUser
             return $next($request);
         }
 
-        if ($user->platform_role === PlatformRole::OrgAdmin && $user->organizations()->exists()) {
-            return $next($request);
-        }
-
         auth()->logout();
+
+        if ($user->platform_role === PlatformRole::OrgAdmin) {
+            return redirect()
+                ->route('clinic.login')
+                ->withErrors(['email' => __('Primary clinic admins sign in at the clinic portal.')]);
+        }
 
         return redirect()
             ->route('login')
-            ->withErrors(['email' => 'You do not have platform access.']);
+            ->withErrors(['email' => __('You do not have platform access.')]);
     }
 }

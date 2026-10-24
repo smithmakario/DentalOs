@@ -7,6 +7,8 @@ enum AuditAction: string
     case ClinicOnboarded = 'clinic_onboarded';
     case ClinicUpdated = 'clinic_updated';
     case BranchCreated = 'branch_created';
+    case BranchUpdated = 'branch_updated';
+    case BranchDeleted = 'branch_deleted';
     case StaffCreated = 'staff_created';
     case StaffUpdated = 'staff_updated';
     case StaffDeactivated = 'staff_deactivated';
@@ -15,6 +17,7 @@ enum AuditAction: string
     case PaymentSettingsUpdated = 'payment_settings_updated';
     case SubscriptionPlanCreated = 'subscription_plan_created';
     case SubscriptionPlanUpdated = 'subscription_plan_updated';
+    case SubscriptionAssigned = 'subscription_assigned';
     case RegistrationRequestSubmitted = 'registration_request_submitted';
     case RegistrationRequestApproved = 'registration_request_approved';
     case RegistrationRequestRejected = 'registration_request_rejected';
@@ -25,6 +28,8 @@ enum AuditAction: string
             self::ClinicOnboarded => __('Clinic onboarded'),
             self::ClinicUpdated => __('Clinic updated'),
             self::BranchCreated => __('Branch created'),
+            self::BranchUpdated => __('Branch updated'),
+            self::BranchDeleted => __('Branch deleted'),
             self::StaffCreated => __('Staff created'),
             self::StaffUpdated => __('Staff updated'),
             self::StaffDeactivated => __('Staff deactivated'),
@@ -33,6 +38,7 @@ enum AuditAction: string
             self::PaymentSettingsUpdated => __('Payment settings updated'),
             self::SubscriptionPlanCreated => __('Subscription plan created'),
             self::SubscriptionPlanUpdated => __('Subscription plan updated'),
+            self::SubscriptionAssigned => __('Subscription assigned'),
             self::RegistrationRequestSubmitted => __('Registration request submitted'),
             self::RegistrationRequestApproved => __('Registration request approved'),
             self::RegistrationRequestRejected => __('Registration request rejected'),

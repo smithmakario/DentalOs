@@ -6,9 +6,27 @@
 
 <aside class="fixed left-0 top-0 h-full flex flex-col py-6 bg-slate-900 w-64 border-r border-slate-800 shadow-xl z-50">
     <div class="px-6 mb-8">
-        <a href="{{ route('tenant.dashboard') }}">
-            <h1 class="text-lg font-black text-white">DentaFlow</h1>
-            <p class="text-xs text-slate-400 truncate">{{ tenant('name') }}</p>
+        <a href="{{ route('tenant.dashboard') }}" class="flex items-start gap-3">
+            @if (! empty($branchLogoUrl))
+                <img
+                    src="{{ $branchLogoUrl }}"
+                    alt="{{ tenant()?->organization?->name ?? tenant('name') }}"
+                    class="h-10 w-10 rounded-lg object-contain bg-white/10 border border-white/10 shrink-0"
+                />
+            @endif
+            <div class="min-w-0">
+                <h1 class="text-lg font-black text-white truncate">
+                    {{ tenant()?->organization?->name ?? config('app.name', 'DentaFlow') }}
+                </h1>
+                <p class="text-xs text-slate-400 truncate">
+                    @if ($staffCanManageClinic ?? false)
+                        {{ tenant('name') }}
+                        <span class="text-slate-500">· {{ __('HQ') }}</span>
+                    @else
+                        {{ tenant('name') }}
+                    @endif
+                </p>
+            </div>
         </a>
     </div>
 
@@ -53,10 +71,21 @@
             </a>
         @endif
 
+        @if ($staffCanManageClinic ?? false)
+            <a class="{{ $navLinkClasses(request()->routeIs('tenant.clinic-branches.*')) }}" href="{{ route('tenant.clinic-branches.index') }}">
+                <span class="material-symbols-outlined">account_tree</span>
+                <span>{{ __('Clinic Branches') }}</span>
+            </a>
+        @endif
+
         @if ($staffCanViewBilling ?? false)
-            <a class="{{ $navLinkClasses(request()->routeIs('tenant.invoices.*')) }}" href="{{ route('tenant.invoices.index') }}">
+            <a class="{{ $navLinkClasses(request()->routeIs(['tenant.transactions.*', 'tenant.invoices.*', 'path.tenant.transactions.*', 'path.tenant.invoices.*'])) }}" href="{{ route('tenant.transactions.index') }}">
                 <span class="material-symbols-outlined">payments</span>
-                <span>{{ __('Billing') }}</span>
+                <span>{{ __('Transactions') }}</span>
+            </a>
+            <a class="{{ $navLinkClasses(request()->routeIs(['tenant.reconciliation', 'path.tenant.reconciliation'])) }}" href="{{ route('tenant.reconciliation') }}">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                <span>{{ __('Reconciliation') }}</span>
             </a>
         @endif
     </nav>
@@ -68,12 +97,14 @@
                     <p class="text-xs text-slate-500 mb-2 uppercase tracking-wider font-bold">{{ __('Switch Branch') }}</p>
                     <div class="space-y-1">
                         @foreach ($switchableBranches as $branch)
-                            @php $domain = $branch->domains->first(); @endphp
-                            @if ($domain)
-                                <a href="http://{{ $domain->domain }}:{{ request()->getPort() ?: 8000 }}/staff/login" class="block px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg truncate">
-                                    {{ $branch->name }}
-                                </a>
-                            @endif
+                            <a
+                                href="{{ ($staffCanManageClinic ?? false)
+                                    ? \App\Support\TenantPortal::url($branch, '/dashboard')
+                                    : \App\Support\TenantPortal::loginUrl($branch) }}"
+                                class="block px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg truncate"
+                            >
+                                {{ $branch->name }}
+                            </a>
                         @endforeach
                     </div>
                 </div>
@@ -82,7 +113,7 @@
             <div class="border-t border-slate-800 pt-3 space-y-1">
                 <p class="px-2 text-xs text-slate-500 truncate">{{ auth('staff')->user()->full_name }}</p>
 
-                <form method="POST" action="{{ route('tenant.logout') }}">
+                <form method="POST" action="{{ tenant() ? \App\Support\TenantPortal::absolute(tenant(), '/logout') : route('tenant.logout') }}">
                     @csrf
                     <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white mx-2 hover:bg-slate-800 transition-all duration-200 rounded-lg">
                         <span class="material-symbols-outlined">logout</span>

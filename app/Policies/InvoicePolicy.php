@@ -31,6 +31,12 @@ class InvoicePolicy
             && $invoice->status !== InvoiceStatus::Void;
     }
 
+    public function updateStatus(Staff $staff, Invoice $invoice): bool
+    {
+        return $staff->hasPermission(StaffPermission::ManageBilling)
+            && $invoice->allowedManualStatuses() !== [];
+    }
+
     public function delete(Staff $staff, Invoice $invoice): bool
     {
         return $staff->hasPermission(StaffPermission::ManageBilling)
@@ -41,6 +47,12 @@ class InvoicePolicy
     {
         return $staff->hasPermission(StaffPermission::ManageBilling)
             && ! in_array($invoice->status, [InvoiceStatus::Paid, InvoiceStatus::Void], true);
+    }
+
+    public function confirmPayment(Staff $staff, Invoice $invoice): bool
+    {
+        return $staff->hasPermission(StaffPermission::ManageBilling)
+            && $invoice->status !== InvoiceStatus::Void;
     }
 
     public function void(Staff $staff, Invoice $invoice): bool

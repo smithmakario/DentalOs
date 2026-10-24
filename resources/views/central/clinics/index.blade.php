@@ -186,15 +186,15 @@
                             @endphp
                             <tr class="hover:bg-slate-50 transition-colors">
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
+                                    <a href="{{ route('clinics.show', $organization) }}" class="flex items-center gap-3 group">
                                         <div class="w-10 h-10 rounded-lg {{ $avatarClass }} flex items-center justify-center font-bold">
                                             {{ $initialsFor($organization->name) }}
                                         </div>
                                         <div>
-                                            <div class="font-medium text-slate-900">{{ $organization->name }}</div>
+                                            <div class="font-medium text-slate-900 group-hover:text-primary transition-colors">{{ $organization->name }}</div>
                                             <div class="text-xs text-slate-500">ID: DF-{{ str_pad((string) $organization->id, 5, '0', STR_PAD_LEFT) }}</div>
                                         </div>
-                                    </div>
+                                    </a>
                                 </td>
                                 <td class="px-6 py-4">
                                     @if ($admin)
@@ -233,16 +233,21 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-right">
-                                    @can('update', $organization)
-                                        <div class="flex justify-end gap-2">
+                                    <div class="flex justify-end gap-2">
+                                        @can('view', $organization)
+                                            <a href="{{ route('clinics.show', $organization) }}" class="p-2 text-slate-400 hover:text-primary hover:bg-blue-50 rounded-lg transition-all" title="{{ __('View Clinic') }}">
+                                                <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                            </a>
+                                        @endcan
+                                        @can('update', $organization)
                                             <a href="{{ route('clinics.edit', $organization) }}" class="p-2 text-slate-400 hover:text-primary hover:bg-blue-50 rounded-lg transition-all" title="{{ __('Edit Clinic') }}">
                                                 <span class="material-symbols-outlined text-[20px]">edit</span>
                                             </a>
                                             <a href="{{ route('clinics.branches.index', $organization) }}" class="p-2 text-slate-400 hover:text-primary hover:bg-blue-50 rounded-lg transition-all" title="{{ __('Manage Branches') }}">
                                                 <span class="material-symbols-outlined text-[20px]">account_tree</span>
                                             </a>
-                                        </div>
-                                    @endcan
+                                        @endcan
+                                    </div>
                                 </td>
                             </tr>
                         @empty

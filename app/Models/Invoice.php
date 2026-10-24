@@ -75,6 +75,25 @@ class Invoice extends Model
             && $this->status !== InvoiceStatus::Paid;
     }
 
+    /**
+     * Manual workflow statuses staff may set (payment totals still drive Partial/Paid).
+     *
+     * @return list<InvoiceStatus>
+     */
+    public function allowedManualStatuses(): array
+    {
+        return match ($this->status) {
+            InvoiceStatus::Draft => [InvoiceStatus::Sent],
+            InvoiceStatus::Sent => [InvoiceStatus::Draft],
+            default => [],
+        };
+    }
+
+    public function allowsManualStatus(InvoiceStatus $status): bool
+    {
+        return in_array($status, $this->allowedManualStatuses(), true);
+    }
+
     /** @param Builder<Invoice> $query */
     public function scopeUnpaid(Builder $query): Builder
     {

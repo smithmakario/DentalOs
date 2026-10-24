@@ -9,6 +9,8 @@
             <p class="font-body-md text-body-md text-on-surface-variant">{{ __('Create a new patient record for this branch.') }}</p>
         </div>
 
+        <x-tenant.working-branch path="/patients/create" class="mb-6" />
+
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
             <form action="{{ route('tenant.patients.store') }}" method="POST">
                 @csrf

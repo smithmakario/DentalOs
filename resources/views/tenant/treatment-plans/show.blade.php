@@ -133,8 +133,9 @@
                                     @can('create', App\Models\Invoice::class)
                                         <a class="inline-flex items-center gap-2 mt-4 bg-primary text-on-primary px-4 py-2 rounded-lg font-label-md hover:opacity-90" href="{{ route('tenant.invoices.create', ['treatment_plan_option_id' => $option->id]) }}">
                                             <span class="material-symbols-outlined text-[18px]">receipt_long</span>
-                                            {{ __('Create Invoice from Option') }}
+                                            {{ __('Raise Invoice') }}
                                         </a>
+                                        <p class="text-body-sm text-on-surface-variant mt-2">{{ __('Creates a billable invoice for print/download. Record payments on the invoice to appear in Transactions.') }}</p>
                                     @endcan
                                 </div>
                                 <div class="bg-white border border-slate-200 rounded-lg p-4">

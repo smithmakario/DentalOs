@@ -7,6 +7,7 @@
     <title>@yield('title', __('Get Started')) — {{ __('DentalOs') }}</title>
     <link rel="icon" href="{{ asset('images/dentalos-logo.svg') }}" type="image/svg+xml"/>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     <script>
         tailwind.config = {

@@ -11,6 +11,8 @@
             </a>
         </div>
 
+        <x-tenant.working-branch path="/appointments/create" class="mb-6" />
+
         @include('tenant.appointments.wizard._stepper')
 
         @switch($wizard['step'])

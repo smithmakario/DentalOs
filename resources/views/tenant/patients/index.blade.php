@@ -56,7 +56,7 @@
                         <input
                             class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm w-72 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                             name="search"
-                            placeholder="{{ __('Search by name, email, or phone...') }}"
+                            placeholder="{{ __('Search by ID, name, email, or phone...') }}"
                             type="search"
                             value="{{ $search }}"
                         />

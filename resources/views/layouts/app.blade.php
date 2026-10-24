@@ -19,10 +19,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-md">
-                        <button type="button" class="p-2 text-slate-500 hover:bg-slate-50 rounded-full transition-colors relative">
-                            <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-                            <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
-                        </button>
+                        <x-notification-bell :items="$platformNotifications ?? collect()" :unread-count="$platformNotificationUnreadCount ?? 0" />
                         <button type="button" class="p-2 text-slate-500 hover:bg-slate-50 rounded-full transition-colors">
                             <span class="material-symbols-outlined" data-icon="help">help</span>
                         </button>

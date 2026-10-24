@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TenantMedia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -30,5 +31,10 @@ class BranchProfile extends Model
         return [
             'settings' => 'array',
         ];
+    }
+
+    public function logoUrl(): ?string
+    {
+        return TenantMedia::urlIfExists($this->logo_path);
     }
 }

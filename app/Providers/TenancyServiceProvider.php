@@ -4,14 +4,21 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Http\Middleware\InitializeTenancyByOrganizationBranchPath;
+use App\Jobs\Tenancy\DropOrphanTenantDatabase;
+use App\Services\TenantDatabaseCleanup;
+use App\Support\TenantPortal;
+use Illuminate\Console\Events\CommandFinished;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
-use Stancl\Tenancy\Events\TenancyEnded;
-use Stancl\Tenancy\Events\TenancyInitialized;
 use Stancl\JobPipeline\JobPipeline;
 use Stancl\Tenancy\Events;
+use Stancl\Tenancy\Events\TenancyEnded;
+use Stancl\Tenancy\Events\TenancyInitialized;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
@@ -28,6 +35,8 @@ class TenancyServiceProvider extends ServiceProvider
             Events\CreatingTenant::class => [],
             Events\TenantCreated::class => [
                 JobPipeline::make([
+                    // migrate:fresh leaves tenant MySQL/SQLite DBs behind; drop orphans before create.
+                    DropOrphanTenantDatabase::class,
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
                     // Jobs\SeedDatabase::class,
@@ -71,12 +80,12 @@ class TenancyServiceProvider extends ServiceProvider
 
             // Tenancy events
             Events\InitializingTenancy::class => [],
-            Events\TenancyInitialized::class => [
+            TenancyInitialized::class => [
                 Listeners\BootstrapTenancy::class,
             ],
 
             Events\EndingTenancy::class => [],
-            Events\TenancyEnded::class => [
+            TenancyEnded::class => [
                 Listeners\RevertToCentralContext::class,
             ],
 
@@ -105,18 +114,46 @@ class TenancyServiceProvider extends ServiceProvider
         $this->bootEvents();
         $this->mapRoutes();
         $this->configureTenantGuard();
+        $this->cleanupOrphanDatabasesAfterMigrateFresh();
 
         $this->makeTenancyMiddlewareHighestPriority();
+    }
+
+    protected function cleanupOrphanDatabasesAfterMigrateFresh(): void
+    {
+        Event::listen(CommandFinished::class, function (CommandFinished $event): void {
+            if ($event->exitCode !== 0) {
+                return;
+            }
+
+            if (! in_array($event->command, ['migrate:fresh', 'migrate:refresh'], true)) {
+                return;
+            }
+
+            $dropped = app(TenantDatabaseCleanup::class)->dropOrphanDatabases();
+
+            if ($dropped === [] || ! $event->output->isVerbose()) {
+                return;
+            }
+
+            foreach ($dropped as $database) {
+                $event->output->writeln('<info>Dropped orphan tenant database:</info> '.$database);
+            }
+        });
     }
 
     protected function configureTenantGuard(): void
     {
         Event::listen(TenancyInitialized::class, function () {
             Config::set('auth.defaults.guard', 'staff');
+            TenantPortal::applyUrlRootForCurrentTenant(
+                app()->bound('request') ? request() : null,
+            );
         });
 
         Event::listen(TenancyEnded::class, function () {
             Config::set('auth.defaults.guard', 'web');
+            URL::forceRootUrl(null);
         });
     }
 
@@ -154,10 +191,13 @@ class TenancyServiceProvider extends ServiceProvider
             Middleware\InitializeTenancyByDomainOrSubdomain::class,
             Middleware\InitializeTenancyByPath::class,
             Middleware\InitializeTenancyByRequestData::class,
+            // Path tenancy on the central host: must run before SubstituteBindings
+            // so /{org}/{branch}/staff/{staff} resolves models on the tenant DB.
+            InitializeTenancyByOrganizationBranchPath::class,
         ];
 
         foreach (array_reverse($tenancyMiddleware) as $middleware) {
-            $this->app[\Illuminate\Contracts\Http\Kernel::class]->prependToMiddlewarePriority($middleware);
+            $this->app[Kernel::class]->prependToMiddlewarePriority($middleware);
         }
     }
 }

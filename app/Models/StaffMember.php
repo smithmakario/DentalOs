@@ -8,10 +8,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Stancl\Tenancy\Database\Concerns\CentralConnection;
 
 class StaffMember extends Model
 {
     /** @use HasFactory<StaffMemberFactory> */
+    use CentralConnection;
+
     use HasFactory;
 
     protected $fillable = [

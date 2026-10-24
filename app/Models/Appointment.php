@@ -25,8 +25,14 @@ class Appointment extends Model
         'duration_minutes',
         'status',
         'notes',
+        'soap_subjective',
+        'soap_objective',
+        'soap_assessment',
+        'soap_plan',
         'checked_in_at',
         'completed_at',
+        'reminder_24h_sent_at',
+        'reminder_1h_sent_at',
     ];
 
     protected function casts(): array
@@ -35,8 +41,52 @@ class Appointment extends Model
             'scheduled_at' => 'datetime',
             'checked_in_at' => 'datetime',
             'completed_at' => 'datetime',
+            'reminder_24h_sent_at' => 'datetime',
+            'reminder_1h_sent_at' => 'datetime',
             'status' => AppointmentStatus::class,
         ];
+    }
+
+    public function hasSoapNotes(): bool
+    {
+        return filled($this->soap_subjective)
+            || filled($this->soap_objective)
+            || filled($this->soap_assessment)
+            || filled($this->soap_plan);
+    }
+
+    /**
+     * Day-of clinical statuses (check-in through completion) stay locked
+     * until the appointment date unless staff marks the change as an emergency.
+     */
+    public function statusRequiresAppointmentDay(AppointmentStatus $status): bool
+    {
+        return in_array($status, [
+            AppointmentStatus::CheckedIn,
+            AppointmentStatus::InProgress,
+            AppointmentStatus::Completed,
+            AppointmentStatus::NoShow,
+        ], true);
+    }
+
+    public function isOnOrAfterScheduledDay(?CarbonInterface $moment = null): bool
+    {
+        $moment ??= now();
+
+        return $moment->copy()->startOfDay()->gte($this->scheduled_at->copy()->startOfDay());
+    }
+
+    public function canApplyStatus(AppointmentStatus $status, bool $isEmergency = false): bool
+    {
+        if ($this->status === $status) {
+            return false;
+        }
+
+        if (! $this->statusRequiresAppointmentDay($status)) {
+            return true;
+        }
+
+        return $isEmergency || $this->isOnOrAfterScheduledDay();
     }
 
     public function patient(): BelongsTo

@@ -64,7 +64,7 @@ class InvoiceTest extends TenantTestCase
         });
     }
 
-    public function test_dentist_can_view_invoices_but_not_create(): void
+    public function test_dentist_can_create_and_update_invoice_status(): void
     {
         $staff = $this->createStaff(['role' => StaffRole::Dentist]);
         $patient = $this->tenant->run(fn (): Patient => Patient::factory()->create());
@@ -73,6 +73,7 @@ class InvoiceTest extends TenantTestCase
             return Invoice::factory()->create([
                 'patient_id' => $patient->id,
                 'invoice_number' => 'INV-2026-0001',
+                'status' => InvoiceStatus::Draft,
             ])->id;
         });
 
@@ -89,7 +90,17 @@ class InvoiceTest extends TenantTestCase
                     ['description' => 'Test', 'quantity' => 1, 'unit_price' => 50],
                 ],
             ])
-            ->assertForbidden();
+            ->assertRedirect();
+
+        $this->actingAs($staff, 'staff')
+            ->patch($this->tenantUrl("/invoices/{$invoiceId}/status"), [
+                'status' => InvoiceStatus::Sent->value,
+            ])
+            ->assertRedirect($this->tenantUrl("/invoices/{$invoiceId}"));
+
+        $this->tenant->run(function () use ($invoiceId): void {
+            $this->assertSame(InvoiceStatus::Sent, Invoice::query()->findOrFail($invoiceId)->status);
+        });
     }
 
     public function test_invoice_can_be_created_from_consented_treatment_plan_option(): void

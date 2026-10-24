@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AuditAction;
+use App\Enums\PlatformRole;
 use App\Models\AuditLog;
 use App\Models\Organization;
 use App\Models\User;
@@ -25,13 +26,14 @@ class AuditLogService
         array $properties = [],
         ?Request $request = null,
     ): AuditLog {
-        $user = Auth::user();
+        $platformUser = Auth::guard('web')->user();
+        $staffUser = Auth::guard('staff')->user();
         $request ??= request();
 
         $auditLog = AuditLog::query()->create([
-            'user_id' => $user?->id,
-            'user_name' => $user?->name,
-            'user_email' => $user?->email,
+            'user_id' => $platformUser?->id,
+            'user_name' => $platformUser?->name ?? $staffUser?->full_name,
+            'user_email' => $platformUser?->email ?? $staffUser?->email,
             'action' => $action,
             'subject_type' => $subject?->getMorphClass(),
             'subject_id' => $subject?->getKey(),
@@ -65,7 +67,7 @@ class AuditLogService
     private function notifySuperAdmins(AuditLog $auditLog): void
     {
         $superAdmins = User::query()
-            ->where('platform_role', \App\Enums\PlatformRole::SuperAdmin)
+            ->where('platform_role', PlatformRole::SuperAdmin)
             ->get();
 
         if ($superAdmins->isNotEmpty()) {

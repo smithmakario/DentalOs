@@ -2,8 +2,12 @@
 
 namespace Tests;
 
+use App\Enums\BillingCycle;
+use App\Enums\OrganizationSubscriptionStatus;
 use App\Models\Organization;
+use App\Models\OrganizationSubscription;
 use App\Models\Staff;
+use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -26,7 +30,24 @@ abstract class TenantTestCase extends TestCase
         $tenantId = 'branch-'.$suffix;
         $this->tenantDomain = $tenantId.'.localhost';
 
-        $this->organization = Organization::factory()->create();
+        $this->organization = Organization::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $plan = SubscriptionPlan::factory()->create([
+            'organization_type' => $this->organization->type,
+            'is_active' => true,
+            'max_branches' => 10,
+        ]);
+
+        OrganizationSubscription::query()->create([
+            'organization_id' => $this->organization->id,
+            'subscription_plan_id' => $plan->id,
+            'billing_cycle' => BillingCycle::Monthly,
+            'status' => OrganizationSubscriptionStatus::Active,
+            'current_period_start' => now()->subDay(),
+            'current_period_end' => now()->addMonth(),
+        ]);
 
         $this->tenant = Tenant::withoutEvents(function () use ($tenantId): Tenant {
             $tenant = Tenant::query()->create([

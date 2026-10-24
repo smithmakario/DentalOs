@@ -180,6 +180,9 @@ class SubscriptionPaymentService
                 'current_period_end' => $periodEnd,
             ]);
 
+            $organization->update(['is_active' => true]);
+            $organization->branches()->update(['is_active' => true]);
+
             return $payment->fresh(['subscription.plan', 'organization']);
         });
     }

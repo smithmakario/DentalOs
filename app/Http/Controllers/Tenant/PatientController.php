@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StorePatientRequest;
 use App\Http\Requests\Tenant\UpdatePatientRequest;
 use App\Models\Patient;
+use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -24,7 +26,8 @@ class PatientController extends Controller
                     $query->where('first_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('patient_id_string', 'like', "%{$search}%");
                 });
             })
             ->latest()
@@ -68,16 +71,27 @@ class PatientController extends Controller
     {
         $this->authorize('view', $patient);
 
-        $patient->loadCount(['appointments', 'treatmentPlans', 'invoices', 'documents']);
+        $patient->loadCount(['appointments', 'treatmentPlans', 'invoices', 'documents', 'allergies']);
         $patient->load([
             'appointments' => fn ($query) => $query->with('provider')->latest('scheduled_at')->limit(5),
             'treatmentPlans' => fn ($query) => $query->with('provider')->latest()->limit(5),
             'documents' => fn ($query) => $query->with('uploader'),
             'invoices' => fn ($query) => $query->latest()->limit(5),
+            'allergies' => fn ($query) => $query->latest(),
+            'vitals' => fn ($query) => $query->latest('recorded_at')->limit(5),
+            'labResults' => fn ($query) => $query->latest('test_date')->limit(5),
         ]);
+
+        $payments = Payment::query()
+            ->whereHas('invoice', fn ($query) => $query->where('patient_id', $patient->id))
+            ->with('invoice')
+            ->latest('paid_at')
+            ->limit(20)
+            ->get();
 
         return view('tenant.patients.show', [
             'patient' => $patient,
+            'payments' => $payments,
         ]);
     }
 
@@ -122,7 +136,7 @@ class PatientController extends Controller
             'is_active' => $request->boolean('is_active'),
         ];
 
-        if ($request->string('preferred_payment_method')->toString() !== \App\Enums\PaymentMethod::Hmo->value) {
+        if ($request->string('preferred_payment_method')->toString() !== PaymentMethod::Hmo->value) {
             $attributes['insurance_provider'] = null;
             $attributes['insurance_number'] = null;
             $attributes['hmo_plan'] = null;

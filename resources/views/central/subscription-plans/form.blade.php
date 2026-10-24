@@ -1,9 +1,49 @@
 @php
     $inputClass = 'w-full px-4 py-3 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary outline-none';
     $inputErrorClass = 'border-error';
+    $isEdit = ($method ?? null) === 'PATCH';
 @endphp
 
-<form method="POST" action="{{ $action }}" class="space-y-6">
+<form
+    method="POST"
+    action="{{ $action }}"
+    class="space-y-6"
+    x-data="{
+        name: @js(old('name', $plan->name)),
+        slug: @js(old('slug', $plan->slug)),
+        slugManual: {{ $isEdit || old('slug') ? 'true' : 'false' }},
+        priceMonthly: @js(old('price_monthly', $plan->price_monthly)),
+        priceYearly: @js(old('price_yearly', $plan->price_yearly)),
+        slugify(value) {
+            return String(value || '')
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .slice(0, 255);
+        },
+        syncSlugFromName() {
+            if (! this.slugManual) {
+                this.slug = this.slugify(this.name);
+            }
+        },
+        onMonthlyInput() {
+            const monthly = parseFloat(this.priceMonthly);
+            if (! Number.isFinite(monthly) || monthly < 0) {
+                return;
+            }
+            this.priceYearly = (Math.round(monthly * 12 * 100) / 100).toFixed(2);
+        },
+        onYearlyInput() {
+            const yearly = parseFloat(this.priceYearly);
+            if (! Number.isFinite(yearly) || yearly < 0) {
+                return;
+            }
+            this.priceMonthly = (Math.round((yearly / 12) * 100) / 100).toFixed(2);
+        },
+    }"
+    x-init="syncSlugFromName()"
+>
     @csrf
     @if ($method ?? false)
         @method($method)
@@ -11,16 +51,16 @@
 
     <div>
         <label for="name" class="block font-label-md text-on-surface-variant mb-2">{{ __('Plan Name') }} *</label>
-        <input id="name" name="name" type="text" value="{{ old('name', $plan->name) }}" required
+        <input id="name" name="name" type="text" x-model="name" @input="syncSlugFromName" required
             class="{{ $inputClass }} @error('name') {{ $inputErrorClass }} @enderror" />
         <x-input-error :messages="$errors->get('name')" class="mt-2" />
     </div>
 
     <div>
-        <label for="slug" class="block font-label-md text-on-surface-variant mb-2">{{ __('Slug') }} *</label>
-        <input id="slug" name="slug" type="text" value="{{ old('slug', $plan->slug) }}" required
-            class="{{ $inputClass }} @error('slug') {{ $inputErrorClass }} @enderror" />
-        <p class="mt-1 text-body-sm text-outline">{{ __('Unique identifier used internally. Lowercase letters, numbers, and dashes only.') }}</p>
+        <label for="slug" class="block font-label-md text-on-surface-variant mb-2">{{ __('Slug') }}</label>
+        <input id="slug" name="slug" type="text" x-model="slug" @input="slugManual = true" readonly
+            class="{{ $inputClass }} bg-surface-container-low @error('slug') {{ $inputErrorClass }} @enderror" />
+        <p class="mt-1 text-body-sm text-outline">{{ __('Auto-generated from the plan name.') }}</p>
         <x-input-error :messages="$errors->get('slug')" class="mt-2" />
     </div>
 
@@ -47,14 +87,33 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <label for="price_monthly" class="block font-label-md text-on-surface-variant mb-2">{{ __('Monthly Price (₦)') }} *</label>
-            <input id="price_monthly" name="price_monthly" type="number" min="0" step="0.01" value="{{ old('price_monthly', $plan->price_monthly) }}" required
-                class="{{ $inputClass }} @error('price_monthly') {{ $inputErrorClass }} @enderror" />
+            <input
+                id="price_monthly"
+                name="price_monthly"
+                type="number"
+                min="0"
+                step="0.01"
+                x-model="priceMonthly"
+                @input="onMonthlyInput"
+                required
+                class="{{ $inputClass }} @error('price_monthly') {{ $inputErrorClass }} @enderror"
+            />
+            <p class="mt-1 text-body-sm text-outline">{{ __('Yearly updates automatically as monthly × 12.') }}</p>
             <x-input-error :messages="$errors->get('price_monthly')" class="mt-2" />
         </div>
         <div>
             <label for="price_yearly" class="block font-label-md text-on-surface-variant mb-2">{{ __('Yearly Price (₦)') }}</label>
-            <input id="price_yearly" name="price_yearly" type="number" min="0" step="0.01" value="{{ old('price_yearly', $plan->price_yearly) }}"
-                class="{{ $inputClass }} @error('price_yearly') {{ $inputErrorClass }} @enderror" />
+            <input
+                id="price_yearly"
+                name="price_yearly"
+                type="number"
+                min="0"
+                step="0.01"
+                x-model="priceYearly"
+                @input="onYearlyInput"
+                class="{{ $inputClass }} @error('price_yearly') {{ $inputErrorClass }} @enderror"
+            />
+            <p class="mt-1 text-body-sm text-outline">{{ __('Monthly updates automatically as yearly ÷ 12.') }}</p>
             <x-input-error :messages="$errors->get('price_yearly')" class="mt-2" />
         </div>
     </div>

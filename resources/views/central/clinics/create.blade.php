@@ -2,7 +2,7 @@
     $initialStep = match (true) {
         $errors->hasAny(['admin_name', 'admin_email', 'admin_password']) => 4,
         $errors->has('type') => 3,
-        $errors->hasAny(['branch_name', 'branch_slug', 'domain']) => 2,
+        $errors->hasAny(['branch_name', 'branch_slug']) => 2,
         default => 1,
     };
 
@@ -32,6 +32,12 @@
             totalSteps: 4,
             steps: @js($wizardSteps),
             nextStepLabels: @js($nextStepLabels),
+            appHost: @js($appHost),
+            mainLabel: @js(__('Main')),
+            clinicName: @js(old('name', '')),
+            branchName: @js(old('branch_name', '')),
+            branchSlug: @js(old('branch_slug', '')),
+            branchNameTouched: {{ old('branch_name') ? 'true' : 'false' }},
             progressWidth() {
                 return (this.step / this.totalSteps) * 100;
             },
@@ -59,6 +65,43 @@
 
                 return 'text-on-surface-variant';
             },
+            slugify(value) {
+                return String(value || '')
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .slice(0, 63);
+            },
+            suggestBranchName(name) {
+                const trimmed = String(name || '').trim();
+
+                return trimmed ? `${trimmed} - ${this.mainLabel}` : '';
+            },
+            syncFromClinicName() {
+                if (! this.branchNameTouched) {
+                    this.branchName = this.suggestBranchName(this.clinicName);
+                }
+
+                this.syncFromBranchName();
+            },
+            syncFromBranchName() {
+                this.branchSlug = this.slugify(this.branchName);
+            },
+            pathAccessPreview() {
+                if (! this.branchSlug) {
+                    return '';
+                }
+
+                const clinicSlug = this.slugify(this.clinicName);
+
+                if (! clinicSlug) {
+                    return '';
+                }
+
+                return `${this.appHost}/${clinicSlug}/${this.branchSlug}`;
+            },
             validateStep(stepNumber) {
                 const panel = this.$refs['stepPanel' + stepNumber];
 
@@ -84,6 +127,10 @@
                     return;
                 }
 
+                if (this.step === 1) {
+                    this.syncFromClinicName();
+                }
+
                 if (this.step < this.totalSteps) {
                     this.step++;
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -103,6 +150,8 @@
                 this.logoPreview = file ? URL.createObjectURL(file) : null;
             },
             handleSubmit(event) {
+                this.syncFromClinicName();
+
                 for (let stepNumber = 1; stepNumber <= this.totalSteps; stepNumber++) {
                     if (! this.validateStep(stepNumber)) {
                         event.preventDefault();
@@ -111,6 +160,13 @@
 
                         return;
                     }
+                }
+            },
+            init() {
+                if (this.clinicName && ! this.branchName) {
+                    this.syncFromClinicName();
+                } else if (this.branchName && ! this.branchSlug) {
+                    this.syncFromBranchName();
                 }
             },
         }"
@@ -173,7 +229,8 @@
                                         id="name"
                                         name="name"
                                         type="text"
-                                        value="{{ old('name') }}"
+                                        x-model="clinicName"
+                                        @input="syncFromClinicName()"
                                         required
                                         placeholder="{{ __('e.g. BrightSmile Dental Group') }}"
                                         class="{{ $inputClass }} @error('name') {{ $inputErrorClass }} @enderror"
@@ -273,7 +330,7 @@
                     <div class="p-xl border-b border-outline-variant bg-surface-bright">
                         <h3 class="font-h3 text-on-surface">{{ __('Step 2: First Branch') }}</h3>
                         <p class="text-body-md text-on-surface-variant mt-1">
-                            {{ __('Configure the initial branch, tenant slug, and access domain.') }}
+                            {{ __('We suggest a branch name from the clinic name. The slug is generated automatically.') }}
                         </p>
                     </div>
 
@@ -284,48 +341,34 @@
                                 id="branch_name"
                                 name="branch_name"
                                 type="text"
-                                value="{{ old('branch_name') }}"
+                                x-model="branchName"
+                                @input="branchNameTouched = true; syncFromBranchName()"
                                 required
-                                placeholder="{{ __('Downtown Clinic') }}"
+                                placeholder="{{ __('e.g. BrightSmile Dental Group - Main') }}"
                                 class="{{ $inputClass }} @error('branch_name') {{ $inputErrorClass }} @enderror"
                             />
+                            <p class="mt-1 text-body-sm text-outline">
+                                {{ __('Suggested from the clinic name — edit if this location should be called something else.') }}
+                            </p>
                             <x-input-error :messages="$errors->get('branch_name')" class="mt-1" />
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
-                            <div class="space-y-unit">
-                                <label for="branch_slug" class="font-label-md text-on-surface-variant block">{{ __('Branch Slug') }} *</label>
-                                <input
-                                    id="branch_slug"
-                                    name="branch_slug"
-                                    type="text"
-                                    value="{{ old('branch_slug') }}"
-                                    required
-                                    placeholder="downtown"
-                                    class="{{ $inputClass }} @error('branch_slug') {{ $inputErrorClass }} @enderror"
-                                />
-                                <p class="mt-1 text-body-sm text-outline">
-                                    {{ __('Used as the tenant identifier. Lowercase letters, numbers, and dashes only.') }}
-                                </p>
-                                <x-input-error :messages="$errors->get('branch_slug')" class="mt-1" />
-                            </div>
-
-                            <div class="space-y-unit">
-                                <label for="domain" class="font-label-md text-on-surface-variant block">{{ __('Branch Domain') }} *</label>
-                                <input
-                                    id="domain"
-                                    name="domain"
-                                    type="text"
-                                    value="{{ old('domain') }}"
-                                    required
-                                    placeholder="downtown.localhost"
-                                    class="{{ $inputClass }} @error('domain') {{ $inputErrorClass }} @enderror"
-                                />
-                                <p class="mt-1 text-body-sm text-outline">
-                                    {{ __('Hostname only — do not include http:// or port numbers (e.g. use downtown.localhost, not downtown.localhost:8000).') }}
-                                </p>
-                                <x-input-error :messages="$errors->get('domain')" class="mt-1" />
-                            </div>
+                        <div class="space-y-unit">
+                            <label for="branch_slug" class="font-label-md text-on-surface-variant block">{{ __('Branch Slug') }}</label>
+                            <input
+                                id="branch_slug"
+                                name="branch_slug"
+                                type="text"
+                                x-model="branchSlug"
+                                readonly
+                                tabindex="-1"
+                                class="{{ $inputClass }} bg-surface-container-low text-on-surface-variant @error('branch_slug') {{ $inputErrorClass }} @enderror"
+                            />
+                            <p class="mt-1 text-body-sm text-outline" x-show="pathAccessPreview()" x-cloak>
+                                {{ __('This is where it will be accessed:') }}
+                                <span class="font-medium text-on-surface" x-text="pathAccessPreview()"></span>
+                            </p>
+                            <x-input-error :messages="$errors->get('branch_slug')" class="mt-1" />
                         </div>
                     </div>
                 </div>
@@ -427,16 +470,14 @@
                                 <x-input-error :messages="$errors->get('admin_email')" class="mt-1" />
                             </div>
 
-                            <div class="space-y-unit">
-                                <label for="admin_password" class="font-label-md text-on-surface-variant block">{{ __('Admin Password') }} *</label>
-                                <input
+                            <div class="space-y-unit md:col-span-2">
+                                <x-password-with-generate
                                     id="admin_password"
                                     name="admin_password"
-                                    type="password"
-                                    required
-                                    class="{{ $inputClass }} @error('admin_password') {{ $inputErrorClass }} @enderror"
+                                    :label="__('Admin Password')"
+                                    :required="true"
+                                    :input-class="$inputClass.($errors->has('admin_password') ? ' '.$inputErrorClass : '')"
                                 />
-                                <x-input-error :messages="$errors->get('admin_password')" class="mt-1" />
                             </div>
                         </div>
                     </div>

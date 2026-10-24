@@ -6,6 +6,8 @@ use App\Enums\StaffPermission;
 use App\Enums\StaffRole;
 use App\Notifications\StaffResetPassword;
 use App\Support\StaffRolePermissions;
+use App\Support\TenantMedia;
+use Database\Factories\StaffFactory;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,12 +15,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 
 class Staff extends Authenticatable implements CanResetPasswordContract
 {
-    /** @use HasFactory<\Database\Factories\StaffFactory> */
+    /** @use HasFactory<StaffFactory> */
     use CanResetPassword;
+
     use HasFactory;
     use Notifiable;
 
@@ -29,6 +31,7 @@ class Staff extends Authenticatable implements CanResetPasswordContract
         'first_name',
         'last_name',
         'email',
+        'google_id',
         'phone',
         'password',
         'role',
@@ -98,11 +101,7 @@ class Staff extends Authenticatable implements CanResetPasswordContract
 
     public function avatarUrl(): string
     {
-        if ($this->avatar_path && Storage::disk('public')->exists($this->avatar_path)) {
-            return tenant_asset($this->avatar_path);
-        }
-
-        return 'https://ui-avatars.com/api/?name='.urlencode($this->full_name).'&background=dae1ff&color=0050cb';
+        return TenantMedia::urlIfExists($this->avatar_path)
+            ?? 'https://ui-avatars.com/api/?name='.urlencode($this->full_name).'&background=dae1ff&color=0050cb';
     }
 }
-

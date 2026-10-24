@@ -4,6 +4,7 @@
     @include('layouts.partials.design-system-head', [
         'title' => tenant('name').' · '.config('app.name', 'DentalOS'),
     ])
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
@@ -26,10 +27,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-md">
-                    <button type="button" class="p-2 text-slate-500 hover:bg-slate-50 rounded-full transition-colors relative">
-                        <span class="material-symbols-outlined">notifications</span>
-                        <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
-                    </button>
+                    <x-notification-bell :items="$tenantNotifications ?? collect()" :unread-count="$tenantNotificationUnreadCount ?? 0" />
                     @auth('staff')
                         <div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
                         <div class="flex items-center gap-3">

@@ -17,6 +17,10 @@
                 </p>
             </div>
             <div class="flex gap-3">
+                <a class="flex items-center gap-2 border border-slate-200 text-on-surface px-6 py-2.5 rounded-lg font-label-md hover:bg-slate-50" href="{{ route('tenant.invoices.print', $invoice) }}" target="_blank">
+                    <span class="material-symbols-outlined text-[18px]">print</span>
+                    {{ __('Print / PDF') }}
+                </a>
                 @can('update', $invoice)
                     @if ($invoice->isEditable())
                         <a class="flex items-center gap-2 border border-slate-200 text-on-surface px-6 py-2.5 rounded-lg font-label-md hover:bg-slate-50" href="{{ route('tenant.invoices.edit', $invoice) }}">
@@ -41,7 +45,24 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div class="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm">
                 <div class="text-label-sm text-on-surface-variant uppercase mb-1">{{ __('Status') }}</div>
-                <div class="text-xl font-bold text-on-surface">{{ $invoice->status->label() }}</div>
+                <div class="text-xl font-bold text-on-surface mb-3">{{ $invoice->status->label() }}</div>
+                @can('updateStatus', $invoice)
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($invoice->allowedManualStatuses() as $nextStatus)
+                            <form method="POST" action="{{ route('tenant.invoices.status', $invoice) }}">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="status" value="{{ $nextStatus->value }}" />
+                                <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg text-body-sm text-on-surface hover:bg-slate-50">
+                                    {{ __('Mark as :status', ['status' => $nextStatus->label()]) }}
+                                </button>
+                            </form>
+                        @endforeach
+                    </div>
+                @endcan
+                @error('status')
+                    <p class="mt-2 text-body-sm text-error">{{ $message }}</p>
+                @enderror
             </div>
             <div class="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm">
                 <div class="text-label-sm text-on-surface-variant uppercase mb-1">{{ __('Total') }}</div>
@@ -123,7 +144,7 @@
                     @if ($invoice->payments->isNotEmpty())
                         <div class="divide-y divide-slate-100">
                             @foreach ($invoice->payments as $payment)
-                                <div class="px-6 py-4 flex justify-between items-center gap-4">
+                                <div class="px-6 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                                     <div>
                                         <p class="font-label-md text-on-surface">{{ $payment->payment_number }}</p>
                                         <p class="text-body-sm text-on-surface-variant">
@@ -135,6 +156,22 @@
                                         @if ($payment->notes)
                                             <p class="text-body-sm text-on-surface-variant mt-1">{{ $payment->notes }}</p>
                                         @endif
+                                        <div class="flex flex-wrap items-center gap-3 mt-2">
+                                            @if ($payment->proofUrl())
+                                                <a href="{{ $payment->proofUrl() }}" target="_blank" class="text-sm text-primary hover:underline">{{ __('View proof') }}</a>
+                                            @endif
+                                            @if ($payment->isConfirmed())
+                                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-bold bg-green-50 text-green-700 border border-green-200">{{ __('Confirmed') }}</span>
+                                            @else
+                                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">{{ __('Awaiting confirmation') }}</span>
+                                                @can('confirmPayment', $invoice)
+                                                    <form method="POST" action="{{ route('tenant.invoices.payments.confirm', [$invoice, $payment]) }}">
+                                                        @csrf
+                                                        <button type="submit" class="text-sm font-label-md text-primary hover:underline">{{ __('Confirm payment') }}</button>
+                                                    </form>
+                                                @endcan
+                                            @endif
+                                        </div>
                                     </div>
                                     <div class="text-right">
                                         <p class="font-label-md text-on-surface">{{ number_format($payment->amount, 2) }}</p>
@@ -153,7 +190,7 @@
                 @can('recordPayment', $invoice)
                     <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 sticky top-24">
                         <h3 class="font-h3 text-on-surface mb-4">{{ __('Record Payment') }}</h3>
-                        <form method="POST" action="{{ route('tenant.invoices.payments.store', $invoice) }}" class="space-y-4">
+                        <form method="POST" action="{{ route('tenant.invoices.payments.store', $invoice) }}" class="space-y-4" enctype="multipart/form-data">
                             @csrf
                             <div>
                                 <label class="block font-label-md text-on-surface-variant mb-2" for="amount">{{ __('Amount') }}</label>
@@ -173,6 +210,12 @@
                             <div>
                                 <label class="block font-label-md text-on-surface-variant mb-2" for="payment_reference">{{ __('Reference') }}</label>
                                 <input class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg" id="payment_reference" name="payment_reference" type="text" value="{{ old('payment_reference') }}" placeholder="{{ __('Receipt #, transaction ID, etc.') }}" />
+                            </div>
+                            <div>
+                                <label class="block font-label-md text-on-surface-variant mb-2" for="proof">{{ __('Payment proof') }}</label>
+                                <input class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg @error('proof') border-error @enderror" id="proof" name="proof" type="file" accept="image/*" />
+                                <p class="mt-1 text-body-sm text-outline">{{ __('Required for transfer and POS. Upload a transfer screenshot or POS slip.') }}</p>
+                                @error('proof') <p class="mt-1 text-body-sm text-error">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block font-label-md text-on-surface-variant mb-2" for="paid_at">{{ __('Paid At') }}</label>

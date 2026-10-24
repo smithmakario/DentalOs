@@ -6,9 +6,12 @@ use App\Enums\AuditAction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Stancl\Tenancy\Database\Concerns\CentralConnection;
 
 class AuditLog extends Model
 {
+    use CentralConnection;
+
     public $timestamps = false;
 
     protected $fillable = [

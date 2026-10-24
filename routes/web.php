@@ -5,12 +5,14 @@ use App\Http\Controllers\Central\AuditLogController;
 use App\Http\Controllers\Central\BranchController;
 use App\Http\Controllers\Central\ClinicController;
 use App\Http\Controllers\Central\DashboardController as CentralDashboardController;
-use App\Http\Controllers\Central\RegistrationRequestController;
 use App\Http\Controllers\Central\PaystackController;
 use App\Http\Controllers\Central\PlatformPaymentSettingController;
+use App\Http\Controllers\Central\RegistrationRequestController;
 use App\Http\Controllers\Central\StaffMemberController;
 use App\Http\Controllers\Central\SubscriptionController;
 use App\Http\Controllers\Central\SubscriptionPlanController;
+use App\Http\Controllers\GetStartedController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -23,11 +25,11 @@ foreach (config('tenancy.central_domains') as $domain) {
                 : view('welcome');
         });
 
-        Route::get('/get-started', [\App\Http\Controllers\GetStartedController::class, 'create'])->name('get-started.create');
-        Route::post('/get-started', [\App\Http\Controllers\GetStartedController::class, 'store'])->name('get-started.store');
-        Route::get('/get-started/thank-you', [\App\Http\Controllers\GetStartedController::class, 'thankYou'])->name('get-started.thank-you');
-        Route::get('/get-started/onboarding/{token}', [\App\Http\Controllers\OnboardingController::class, 'show'])->name('onboarding.show');
-        Route::post('/get-started/onboarding/{token}', [\App\Http\Controllers\OnboardingController::class, 'store'])->name('onboarding.store');
+        Route::get('/get-started', [GetStartedController::class, 'create'])->name('get-started.create');
+        Route::post('/get-started', [GetStartedController::class, 'store'])->name('get-started.store');
+        Route::get('/get-started/thank-you', [GetStartedController::class, 'thankYou'])->name('get-started.thank-you');
+        Route::get('/get-started/onboarding/{token}', [OnboardingController::class, 'show'])->name('onboarding.show');
+        Route::post('/get-started/onboarding/{token}', [OnboardingController::class, 'store'])->name('onboarding.store');
 
         Route::get('/dashboard', CentralDashboardController::class)
             ->middleware(['auth', 'platform'])
@@ -41,10 +43,17 @@ foreach (config('tenancy.central_domains') as $domain) {
             Route::get('/clinics', [ClinicController::class, 'index'])->name('clinics.index');
             Route::get('/clinics/create', [ClinicController::class, 'create'])->name('clinics.create');
             Route::post('/clinics', [ClinicController::class, 'store'])->name('clinics.store');
+            Route::get('/clinics/{organization}', [ClinicController::class, 'show'])->name('clinics.show');
+            Route::post('/clinics/{organization}/subscription', [ClinicController::class, 'assignSubscription'])->name('clinics.subscription.assign');
+            Route::post('/clinics/{organization}/admin-branch', [ClinicController::class, 'assignAdminBranch'])->name('clinics.admin-branch.assign');
+            Route::patch('/clinics/{organization}/primary-admin', [ClinicController::class, 'updatePrimaryAdmin'])->name('clinics.primary-admin.update');
             Route::get('/clinics/{organization}/edit', [ClinicController::class, 'edit'])->name('clinics.edit');
             Route::patch('/clinics/{organization}', [ClinicController::class, 'update'])->name('clinics.update');
             Route::get('/clinics/{organization}/branches', [BranchController::class, 'index'])->name('clinics.branches.index');
             Route::post('/clinics/{organization}/branches', [BranchController::class, 'store'])->name('clinics.branches.store');
+            Route::patch('/clinics/{organization}/branches/{tenant}', [BranchController::class, 'update'])->name('clinics.branches.update');
+            Route::patch('/clinics/{organization}/branches/{tenant}/primary-admin', [BranchController::class, 'updatePrimaryAdmin'])->name('clinics.branches.primary-admin.update');
+            Route::delete('/clinics/{organization}/branches/{tenant}', [BranchController::class, 'destroy'])->name('clinics.branches.destroy');
             Route::get('/clinics/{organization}/staff', [StaffMemberController::class, 'organizationIndex'])->name('clinics.staff.index');
             Route::get('/clinics/{organization}/staff/create', [StaffMemberController::class, 'create'])->name('clinics.staff.create');
             Route::post('/clinics/{organization}/staff', [StaffMemberController::class, 'store'])->name('clinics.staff.store');
@@ -83,5 +92,6 @@ foreach (config('tenancy.central_domains') as $domain) {
             ->name('paystack.webhook');
 
         require __DIR__.'/auth.php';
+        require __DIR__.'/clinic.php';
     });
 }

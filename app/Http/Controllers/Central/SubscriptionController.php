@@ -30,11 +30,11 @@ class SubscriptionController extends Controller
 
     public function index(): View
     {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
         $user = auth()->user();
 
-        $organizationsQuery = $user->platform_role === PlatformRole::SuperAdmin
-            ? Organization::query()
-            : $user->organizations()->getQuery();
+        $organizationsQuery = Organization::query();
 
         $plans = SubscriptionPlan::query()
             ->where('is_active', true)

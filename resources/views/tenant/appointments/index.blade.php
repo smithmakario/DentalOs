@@ -9,12 +9,18 @@
                     {{ __('Manage visits, provider schedules, and appointment status for :branch.', ['branch' => tenant('name')]) }}
                 </p>
             </div>
-            @can('create', App\Models\Appointment::class)
-                <a href="{{ route('tenant.appointments.create') }}" class="flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
-                    <span class="material-symbols-outlined text-[18px]">event</span>
-                    {{ __('Schedule Appointment') }}
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ route('tenant.appointments.index', ['view' => 'board', 'date' => today()->format('Y-m-d')]) }}" class="flex items-center gap-2 border border-slate-200 text-on-surface px-5 py-2.5 rounded-lg font-label-md hover:bg-slate-50">
+                    <span class="material-symbols-outlined text-[18px]">view_kanban</span>
+                    {{ __('Day Board') }}
                 </a>
-            @endcan
+                @can('create', App\Models\Appointment::class)
+                    <a href="{{ route('tenant.appointments.create') }}" class="flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
+                        <span class="material-symbols-outlined text-[18px]">event</span>
+                        {{ __('Schedule Appointment') }}
+                    </a>
+                @endcan
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Central;
 
+use App\Enums\AuditAction;
+use App\Enums\StaffRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Central\StoreStaffMemberRequest;
 use App\Http\Requests\Central\UpdateStaffMemberRequest;
-use App\Enums\AuditAction;
 use App\Models\Organization;
 use App\Models\StaffMember;
 use App\Services\AuditLogService;
+use App\Services\ClinicPrimaryAdminService;
 use App\Services\StaffProvisioningService;
 use App\Support\StaffRolePermissions;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +21,7 @@ class StaffMemberController extends Controller
     public function __construct(
         private StaffProvisioningService $staffProvisioningService,
         private AuditLogService $auditLogService,
+        private ClinicPrimaryAdminService $clinicPrimaryAdminService,
     ) {}
 
     public function index(): View
@@ -41,6 +44,9 @@ class StaffMemberController extends Controller
         $this->authorize('view', $organization);
         $this->authorize('viewAny', StaffMember::class);
 
+        // Backfill primary admins created before they were mirrored into staff_members.
+        $this->clinicPrimaryAdminService->ensureListedAsStaff($organization);
+
         $staffMembers = $organization->staffMembers()
             ->with('branchAssignments.branch.domains')
             ->latest()
@@ -58,7 +64,7 @@ class StaffMemberController extends Controller
 
         return view('central.staff.create', [
             'organization' => $organization->load('branches'),
-            'roles' => \App\Enums\StaffRole::cases(),
+            'roles' => StaffRole::cases(),
         ]);
     }
 
@@ -101,7 +107,7 @@ class StaffMemberController extends Controller
         return view('central.staff.edit', [
             'organization' => $organization->load('branches'),
             'staffMember' => $staffMember,
-            'roles' => \App\Enums\StaffRole::cases(),
+            'roles' => StaffRole::cases(),
             'permissionPreview' => StaffRolePermissions::permissionLabels($staffMember->role),
         ]);
     }

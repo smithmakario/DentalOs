@@ -21,12 +21,14 @@ class StaffRolePermissions
                 StaffPermission::ManageStaff,
                 StaffPermission::ManageBranchSettings,
                 StaffPermission::ManageBilling,
+                StaffPermission::ManageClinicBranches,
             ],
             StaffRole::Dentist => [
                 StaffPermission::ViewPatientCharts,
                 StaffPermission::ManagePatients,
                 StaffPermission::ManageAppointments,
                 StaffPermission::ManageTreatments,
+                StaffPermission::ManageBilling,
             ],
             StaffRole::Hygienist => [
                 StaffPermission::ViewPatientCharts,
@@ -64,6 +66,7 @@ class StaffRolePermissions
                 StaffPermission::ManageStaff => __('Manage staff'),
                 StaffPermission::ManageBranchSettings => __('Manage branch settings'),
                 StaffPermission::ManageBilling => __('Manage billing'),
+                StaffPermission::ManageClinicBranches => __('Manage clinic branches'),
             },
             self::forRole($role),
         );

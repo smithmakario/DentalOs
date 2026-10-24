@@ -23,27 +23,38 @@
             <span>{{ __('Clinics') }}</span>
         </a>
 
-        <a class="{{ $navLinkClasses(request()->routeIs('subscriptions.*')) }}" href="{{ route('subscriptions.index') }}">
-            <span class="material-symbols-outlined" data-icon="payments">payments</span>
-            <span>{{ __('Subscription') }}</span>
-        </a>
+        @if (auth()->user()?->isSuperAdmin())
+            <a class="{{ $navLinkClasses(request()->routeIs('subscriptions.*') || request()->routeIs('subscription-plans.*')) }}" href="{{ route('subscriptions.index') }}">
+                <span class="material-symbols-outlined" data-icon="payments">payments</span>
+                <span>{{ __('Subscriptions') }}</span>
+            </a>
 
-        <a class="{{ $navLinkClasses(request()->routeIs('analytics.*')) }}" href="{{ route('analytics.index') }}">
-            <span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
-            <span>{{ __('Analytics') }}</span>
-        </a>
+            <a class="{{ $navLinkClasses(request()->routeIs('analytics.*')) }}" href="{{ route('analytics.index') }}">
+                <span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+                <span>{{ __('Analytics') }}</span>
+            </a>
+        @endif
 
         @can('viewAny', App\Models\StaffMember::class)
             <a class="{{ $navLinkClasses(request()->routeIs('staff.*') || request()->routeIs('clinics.staff.*')) }}" href="{{ route('staff.index') }}">
                 <span class="material-symbols-outlined" data-icon="group">group</span>
-                <span>{{ __('Staff') }}</span>
+                <span>{{ __('Users & Staff') }}</span>
             </a>
         @endcan
 
-        <a class="{{ $navLinkClasses(request()->routeIs('audit-logs.*')) }}" href="{{ route('audit-logs.index') }}">
-            <span class="material-symbols-outlined" data-icon="history">history</span>
-            <span>{{ __('Audit Log') }}</span>
-        </a>
+        @if (auth()->user()?->isSuperAdmin())
+            @can('viewAny', App\Models\OrganizationRegistrationRequest::class)
+                <a class="{{ $navLinkClasses(request()->routeIs('registration-requests.*')) }}" href="{{ route('registration-requests.index') }}">
+                    <span class="material-symbols-outlined" data-icon="how_to_reg">how_to_reg</span>
+                    <span>{{ __('Registrations') }}</span>
+                </a>
+            @endcan
+
+            <a class="{{ $navLinkClasses(request()->routeIs('audit-logs.*')) }}" href="{{ route('audit-logs.index') }}">
+                <span class="material-symbols-outlined" data-icon="history">history</span>
+                <span>{{ __('Audit Log') }}</span>
+            </a>
+        @endif
     </nav>
 
     <div class="mt-auto px-4 space-y-3">

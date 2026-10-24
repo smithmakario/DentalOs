@@ -1,9 +1,9 @@
 <x-app-layout>
     <div class="p-8 max-w-3xl mx-auto">
         <div class="mb-8">
-            <a href="{{ route('clinics.index') }}" class="inline-flex items-center gap-1 text-primary font-label-md hover:underline mb-4">
+            <a href="{{ route('clinics.show', $organization) }}" class="inline-flex items-center gap-1 text-primary font-label-md hover:underline mb-4">
                 <span class="material-symbols-outlined text-sm">arrow_back</span>
-                {{ __('Back to Clinics') }}
+                {{ __('Back to Clinic') }}
             </a>
             <h2 class="font-h1 text-h2 text-on-surface mb-2">{{ __('Edit Clinic') }}</h2>
             <p class="font-body-md text-on-surface-variant">{{ $organization->name }}</p>

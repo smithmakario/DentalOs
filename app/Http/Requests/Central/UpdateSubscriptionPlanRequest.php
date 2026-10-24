@@ -22,6 +22,16 @@ class UpdateSubscriptionPlanRequest extends FormRequest
                 'slug' => Str::slug($this->string('name')->toString()),
             ]);
         }
+
+        if ($this->filled('price_monthly') && ! $this->filled('price_yearly')) {
+            $this->merge([
+                'price_yearly' => round((float) $this->input('price_monthly') * 12, 2),
+            ]);
+        } elseif ($this->filled('price_yearly') && ! $this->filled('price_monthly')) {
+            $this->merge([
+                'price_monthly' => round((float) $this->input('price_yearly') / 12, 2),
+            ]);
+        }
     }
 
     /**

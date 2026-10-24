@@ -10,6 +10,10 @@
                 </a>
                 <h2 class="font-h1 text-h1 text-on-surface mb-2">{{ $patient->full_name }}</h2>
                 <p class="font-body-md text-body-md text-on-surface-variant">
+                    @if ($patient->patient_id_string)
+                        <span class="font-semibold text-on-surface">{{ $patient->patient_id_string }}</span>
+                        ·
+                    @endif
                     {{ __('Patient since :date', ['date' => $patient->created_at->format('M j, Y')]) }}
                 </p>
             </div>
@@ -134,6 +138,123 @@
                 <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
                     <h3 class="font-h3 text-on-surface mb-4">{{ __('Medical Notes') }}</h3>
                     <p class="text-body-md text-on-surface whitespace-pre-line">{{ $patient->medical_notes }}</p>
+                </div>
+            @endif
+
+            <div class="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100">
+                        <h3 class="font-h3 text-on-surface">{{ __('Allergies') }}</h3>
+                        <p class="text-body-sm text-on-surface-variant mt-1">{{ __('Critical allergies shown to clinical staff before treatment.') }}</p>
+                    </div>
+                    @if ($patient->allergies->isNotEmpty())
+                        <ul class="divide-y divide-slate-100">
+                            @foreach ($patient->allergies as $allergy)
+                                <li class="px-6 py-4 flex items-start justify-between gap-3">
+                                    <div>
+                                        <p class="font-semibold text-on-surface">{{ $allergy->allergen }}</p>
+                                        <p class="text-body-sm text-on-surface-variant">
+                                            {{ $allergy->reaction ?: __('No reaction noted') }}
+                                            @if ($allergy->severity) · {{ ucfirst($allergy->severity) }} @endif
+                                            · {{ ucfirst($allergy->status) }}
+                                        </p>
+                                    </div>
+                                    @can('update', $patient)
+                                        <form method="POST" action="{{ route('tenant.patients.allergies.destroy', [$patient, $allergy]) }}" onsubmit="return confirm(@js(__('Remove this allergy?')))">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-error text-sm font-label-md hover:underline">{{ __('Remove') }}</button>
+                                        </form>
+                                    @endcan
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="px-6 py-8 text-body-md text-on-surface-variant">{{ __('No allergies recorded.') }}</div>
+                    @endif
+                    @can('update', $patient)
+                        <form method="POST" action="{{ route('tenant.patients.allergies.store', $patient) }}" class="p-6 border-t border-slate-100 bg-slate-50/50 space-y-3">
+                            @csrf
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <input name="allergen" type="text" required placeholder="{{ __('Allergen') }}" value="{{ old('allergen') }}" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                                <input name="reaction" type="text" placeholder="{{ __('Reaction') }}" value="{{ old('reaction') }}" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                                <select name="severity" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+                                    <option value="">{{ __('Severity') }}</option>
+                                    <option value="mild">{{ __('Mild') }}</option>
+                                    <option value="moderate">{{ __('Moderate') }}</option>
+                                    <option value="severe">{{ __('Severe') }}</option>
+                                </select>
+                                <select name="status" required class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+                                    <option value="active">{{ __('Active') }}</option>
+                                    <option value="resolved">{{ __('Resolved') }}</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="inline-flex items-center gap-1 bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-label-md hover:opacity-90">{{ __('Add allergy') }}</button>
+                        </form>
+                    @endcan
+                </div>
+
+                <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100">
+                        <h3 class="font-h3 text-on-surface">{{ __('Vitals') }}</h3>
+                        <p class="text-body-sm text-on-surface-variant mt-1">{{ __('Latest readings for this patient.') }}</p>
+                    </div>
+                    @if ($patient->vitals->isNotEmpty())
+                        <ul class="divide-y divide-slate-100">
+                            @foreach ($patient->vitals as $vital)
+                                <li class="px-6 py-4">
+                                    <p class="font-semibold text-on-surface">{{ $vital->recorded_at?->format('M j, Y g:i A') }}</p>
+                                    <p class="text-body-sm text-on-surface-variant mt-1">
+                                        @if ($vital->blood_pressure) {{ __('BP') }} {{ $vital->blood_pressure }} · @endif
+                                        @if ($vital->heart_rate) {{ __('HR') }} {{ $vital->heart_rate }} · @endif
+                                        @if ($vital->temperature) {{ __('Temp') }} {{ $vital->temperature }}° · @endif
+                                        @if ($vital->weight) {{ __('Wt') }} {{ $vital->weight }}
+                                        @endif
+                                    </p>
+                                    @if ($vital->notes)
+                                        <p class="text-body-sm text-outline mt-1">{{ $vital->notes }}</p>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="px-6 py-8 text-body-md text-on-surface-variant">{{ __('No vitals recorded yet.') }}</div>
+                    @endif
+                    @can('update', $patient)
+                        <form method="POST" action="{{ route('tenant.patients.vitals.store', $patient) }}" class="p-6 border-t border-slate-100 bg-slate-50/50 space-y-3">
+                            @csrf
+                            <div class="grid grid-cols-2 gap-3">
+                                <input name="blood_pressure" type="text" placeholder="{{ __('BP e.g. 120/80') }}" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                                <input name="heart_rate" type="number" placeholder="{{ __('Heart rate') }}" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                                <input name="temperature" type="number" step="0.1" placeholder="{{ __('Temp °C') }}" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                                <input name="weight" type="number" step="0.1" placeholder="{{ __('Weight kg') }}" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                            </div>
+                            <textarea name="notes" rows="2" placeholder="{{ __('Optional notes') }}" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"></textarea>
+                            <button type="submit" class="inline-flex items-center gap-1 bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-label-md hover:opacity-90">{{ __('Record vitals') }}</button>
+                        </form>
+                    @endcan
+                </div>
+            </div>
+
+            @if ($patient->labResults->isNotEmpty())
+                <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100">
+                        <h3 class="font-h3 text-on-surface">{{ __('Lab Results') }}</h3>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        @foreach ($patient->labResults as $result)
+                            <div class="px-6 py-4">
+                                <p class="font-semibold text-on-surface">{{ $result->test_name }}</p>
+                                <p class="text-body-sm text-on-surface-variant">
+                                    {{ $result->test_date?->format('M j, Y') }}
+                                    @if ($result->reference_range) · {{ __('Ref') }}: {{ $result->reference_range }} @endif
+                                </p>
+                                @if ($result->result)
+                                    <p class="text-body-md text-on-surface mt-1 whitespace-pre-line">{{ $result->result }}</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             @endif
 
@@ -288,6 +409,59 @@
                     </div>
                 </div>
             @endif
+
+            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-h3 text-on-surface">{{ __('Payment history') }}</h3>
+                    @can('viewAny', App\Models\Invoice::class)
+                        <a class="text-primary font-label-md hover:underline" href="{{ route('tenant.transactions.index', ['search' => $patient->last_name]) }}">{{ __('All transactions') }}</a>
+                    @endcan
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50">
+                                <th class="px-6 py-3 text-xs uppercase text-slate-500">{{ __('Date') }}</th>
+                                <th class="px-6 py-3 text-xs uppercase text-slate-500">{{ __('Invoice') }}</th>
+                                <th class="px-6 py-3 text-xs uppercase text-slate-500">{{ __('Method') }}</th>
+                                <th class="px-6 py-3 text-xs uppercase text-slate-500 text-right">{{ __('Amount') }}</th>
+                                <th class="px-6 py-3 text-xs uppercase text-slate-500">{{ __('Proof') }}</th>
+                                <th class="px-6 py-3 text-xs uppercase text-slate-500">{{ __('Status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse ($payments as $payment)
+                                <tr>
+                                    <td class="px-6 py-3 text-sm text-slate-600">{{ $payment->paid_at?->format('M j, Y') ?? '—' }}</td>
+                                    <td class="px-6 py-3 text-sm">
+                                        <a href="{{ route('tenant.invoices.show', $payment->invoice) }}" class="text-primary hover:underline">{{ $payment->invoice->invoice_number }}</a>
+                                    </td>
+                                    <td class="px-6 py-3 text-sm">{{ $payment->payment_method?->label() ?? '—' }}</td>
+                                    <td class="px-6 py-3 text-sm text-right font-medium">{{ number_format((float) $payment->amount, 2) }}</td>
+                                    <td class="px-6 py-3 text-sm">
+                                        @if ($payment->proofUrl())
+                                            <a href="{{ $payment->proofUrl() }}" target="_blank" class="text-primary hover:underline">{{ __('View') }}</a>
+                                        @else
+                                            <span class="text-slate-400">{{ __('None') }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-3 text-sm">
+                                        @if ($payment->isConfirmed())
+                                            <span class="text-green-700 font-medium">{{ __('Confirmed') }}</span>
+                                        @else
+                                            <span class="text-amber-700">{{ __('Recorded') }}</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-6 py-10 text-center text-sm text-slate-500">{{ __('No payments recorded for this patient yet.') }}</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             @if ($patient->appointments->isNotEmpty())
                 <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">

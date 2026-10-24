@@ -4,6 +4,7 @@ namespace App\Http\Requests\Tenant;
 
 use App\Enums\StaffRole;
 use App\Models\Staff;
+use App\Services\ClinicAdminAccess;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -20,6 +21,8 @@ class StoreStaffRequest extends FormRequest
      */
     public function rules(): array
     {
+        $onAdminBranch = app(ClinicAdminAccess::class)->isAdminBranch();
+
         return [
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
@@ -30,7 +33,7 @@ class StoreStaffRequest extends FormRequest
                 'required',
                 Rule::in(array_map(
                     fn (StaffRole $role): string => $role->value,
-                    StaffRole::branchAssignable(),
+                    StaffRole::branchAssignable($onAdminBranch),
                 )),
             ],
             'specialization' => ['nullable', 'string', 'max:150'],

@@ -88,12 +88,14 @@
     </div>
 
     <div>
-        <label class="block font-label-md text-on-surface-variant mb-2" for="password">
-            {{ $member->exists ? __('New Password (optional)') : __('Password') }}
-            @unless ($member->exists) * @endunless
-        </label>
-        <input class="{{ $inputClass }} @error('password') border-error @enderror" id="password" name="password" type="password" @unless($member->exists) required @endunless autocomplete="new-password" />
-        @error('password') <p class="mt-1 text-body-sm text-error">{{ $message }}</p> @enderror
+        <x-password-with-generate
+            id="password"
+            name="password"
+            :label="$member->exists ? __('New Password (optional)') : __('Password')"
+            :required="! $member->exists"
+            :hint="$member->exists ? __('Leave blank to keep the current password.') : null"
+            :input-class="$inputClass"
+        />
     </div>
 
     <div class="flex items-center gap-3 pt-8">

@@ -6,11 +6,14 @@ use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreInvoiceRequest;
 use App\Http\Requests\Tenant\UpdateInvoiceRequest;
+use App\Http\Requests\Tenant\UpdateInvoiceStatusRequest;
 use App\Models\Appointment;
+use App\Models\BranchProfile;
 use App\Models\ClinicService;
 use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\TreatmentPlanOption;
+use App\Services\ClinicActivityLogService;
 use App\Services\InvoiceService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +24,7 @@ class InvoiceController extends Controller
 {
     public function __construct(
         private readonly InvoiceService $invoiceService,
+        private readonly ClinicActivityLogService $activityLog,
     ) {}
 
     public function index(Request $request): View
@@ -96,6 +100,15 @@ class InvoiceController extends Controller
             $prefill['treatment_plan_option_id'] = $option->id;
         }
 
+        $appointmentId = $request->integer('appointment_id');
+        if ($optionId <= 0 && $appointmentId > 0) {
+            $appointment = Appointment::query()
+                ->with('treatments')
+                ->findOrFail($appointmentId);
+
+            $prefill = $this->invoiceService->prefilledFromAppointment($appointment);
+        }
+
         return view('tenant.invoices.create', [
             'invoice' => new Invoice([
                 'status' => InvoiceStatus::Draft,
@@ -136,6 +149,18 @@ class InvoiceController extends Controller
 
         return view('tenant.invoices.show', [
             'invoice' => $invoice,
+        ]);
+    }
+
+    public function print(Invoice $invoice): View
+    {
+        $this->authorize('view', $invoice);
+
+        $invoice->load(['patient', 'appointment.provider', 'items', 'payments']);
+
+        return view('tenant.invoices.print', [
+            'invoice' => $invoice,
+            'branch' => BranchProfile::query()->first(),
         ]);
     }
 
@@ -197,8 +222,43 @@ class InvoiceController extends Controller
 
         $this->invoiceService->void($invoice);
 
+        $this->activityLog->record(
+            'invoice_voided',
+            __('Invoice :number voided', ['number' => $invoice->invoice_number]),
+            $invoice,
+            [
+                'discount' => $invoice->discount,
+                'total' => $invoice->total,
+            ],
+        );
+
         return redirect()
             ->route('tenant.invoices.show', $invoice)
             ->with('success', __('Invoice voided.'));
+    }
+
+    public function updateStatus(UpdateInvoiceStatusRequest $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('updateStatus', $invoice);
+
+        $status = $request->enum('status', InvoiceStatus::class);
+        $previous = $invoice->status->value;
+
+        $this->invoiceService->applyManualStatus($invoice, $status);
+
+        $this->activityLog->record(
+            'invoice_status_updated',
+            __('Invoice :number status changed from :from to :to', [
+                'number' => $invoice->invoice_number,
+                'from' => $previous,
+                'to' => $status->value,
+            ]),
+            $invoice,
+            ['from' => $previous, 'to' => $status->value],
+        );
+
+        return redirect()
+            ->route('tenant.invoices.show', $invoice)
+            ->with('success', __('Invoice status updated.'));
     }
 }

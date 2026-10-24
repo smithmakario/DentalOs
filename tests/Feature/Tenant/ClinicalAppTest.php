@@ -6,6 +6,7 @@ use App\Enums\AppointmentStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\StaffRole;
 use App\Models\Appointment;
+use App\Models\ClinicService;
 use App\Models\Patient;
 use App\Models\Staff;
 use Illuminate\Support\Facades\Hash;
@@ -18,8 +19,8 @@ class ClinicalAppTest extends TenantTestCase
         $response = $this->get($this->tenantUrl('/staff/login'));
 
         $response->assertOk();
-        $response->assertSee(__('Branch Sign In'));
-        $response->assertSee('Test Branch');
+        $response->assertSee(__('Welcome to :clinic', ['clinic' => $this->organization->name]));
+        $response->assertSee(__('Sign in to :branch', ['branch' => 'Test Branch']));
     }
 
     public function test_staff_can_authenticate_and_view_dashboard(): void
@@ -41,6 +42,27 @@ class ClinicalAppTest extends TenantTestCase
 
         $dashboard->assertOk();
         $dashboard->assertSee(__('Branch Overview'));
+    }
+
+    public function test_staff_can_logout_without_csrf_expiry(): void
+    {
+        $staff = $this->createStaff([
+            'email' => 'logout@branch.test',
+            'password' => 'password',
+            'role' => StaffRole::Dentist,
+        ]);
+
+        $this->post($this->tenantUrl('/staff/login'), [
+            'email' => $staff->email,
+            'password' => 'password',
+        ])->assertRedirect($this->tenantUrl('/dashboard'));
+
+        $this->assertAuthenticated('staff');
+
+        $this->post($this->tenantUrl('/logout'))
+            ->assertRedirect($this->tenantUrl('/staff/login'));
+
+        $this->assertGuest('staff');
     }
 
     public function test_dentist_can_list_and_view_patients(): void
@@ -116,7 +138,7 @@ class ClinicalAppTest extends TenantTestCase
 
         $scheduledAt = now()->addDays(3)->setTime(10, 0);
 
-        $service = $this->tenant->run(fn () => \App\Models\ClinicService::query()->create([
+        $service = $this->tenant->run(fn () => ClinicService::query()->create([
             'code' => 'TEST-001',
             'name' => 'Routine Checkup',
             'category' => 'Preventive',

@@ -6,6 +6,7 @@ use App\Enums\AppointmentStatus;
 use App\Enums\StaffRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreAppointmentRequest;
+use App\Http\Requests\Tenant\UpdateAppointmentClinicalNotesRequest;
 use App\Http\Requests\Tenant\UpdateAppointmentRequest;
 use App\Http\Requests\Tenant\UpdateAppointmentStatusRequest;
 use App\Models\Appointment;
@@ -14,6 +15,7 @@ use App\Models\ClinicService;
 use App\Models\Patient;
 use App\Models\Staff;
 use App\Services\AppointmentSchedulingService;
+use App\Services\ClinicActivityLogService;
 use App\Support\AppointmentWizard;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,6 +27,7 @@ class AppointmentController extends Controller
 {
     public function __construct(
         private readonly AppointmentSchedulingService $schedulingService,
+        private readonly ClinicActivityLogService $activityLog,
     ) {}
 
     public function index(Request $request): View
@@ -35,6 +38,35 @@ class AppointmentController extends Controller
         $status = $request->string('status')->trim()->toString();
         $providerId = $request->integer('provider_id');
         $period = $request->string('period')->trim()->toString() ?: 'upcoming';
+        $view = $request->string('view')->trim()->toString() ?: 'list';
+        $boardDate = $request->filled('date')
+            ? Carbon::parse($request->string('date')->toString())->startOfDay()
+            : today();
+
+        if ($view === 'board') {
+            $boardAppointments = Appointment::query()
+                ->with(['patient', 'provider'])
+                ->whereDate('scheduled_at', $boardDate)
+                ->when($providerId > 0, fn (Builder $query) => $query->where('provider_id', $providerId))
+                ->when($status !== '', fn (Builder $query) => $query->where('status', $status))
+                ->orderBy('scheduled_at')
+                ->get()
+                ->groupBy(fn (Appointment $appointment) => $appointment->provider_id);
+
+            return view('tenant.appointments.board', [
+                'boardDate' => $boardDate,
+                'boardAppointments' => $boardAppointments,
+                'providers' => Staff::providers()->orderBy('first_name')->get(),
+                'providerId' => $providerId,
+                'status' => $status,
+                'todayCount' => Appointment::whereDate('scheduled_at', today())->count(),
+                'upcomingCount' => Appointment::where('scheduled_at', '>=', now())->count(),
+                'completedToday' => Appointment::whereDate('scheduled_at', today())
+                    ->where('status', AppointmentStatus::Completed)
+                    ->count(),
+                'cancelledCount' => Appointment::where('status', AppointmentStatus::Cancelled)->count(),
+            ]);
+        }
 
         $appointments = Appointment::query()
             ->with(['patient', 'provider'])
@@ -42,7 +74,8 @@ class AppointmentController extends Controller
                 $query->whereHas('patient', function (Builder $query) use ($search) {
                     $query->where('first_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('patient_id_string', 'like', "%{$search}%");
                 });
             })
             ->when($status !== '', fn (Builder $query) => $query->where('status', $status))
@@ -188,6 +221,12 @@ class AppointmentController extends Controller
             'notes' => $request->string('notes')->trim()->toString() ?: null,
         ]);
 
+        $this->activityLog->record(
+            'appointment_scheduled',
+            __('Appointment scheduled for :patient', ['patient' => $appointment->patient->full_name]),
+            $appointment,
+        );
+
         return redirect()
             ->route('tenant.appointments.show', $appointment)
             ->with('success', __('Appointment scheduled successfully.'));
@@ -197,7 +236,7 @@ class AppointmentController extends Controller
     {
         $this->authorize('view', $appointment);
 
-        $appointment->load(['patient', 'provider']);
+        $appointment->load(['patient', 'provider', 'invoice']);
 
         return view('tenant.appointments.show', [
             'appointment' => $appointment,
@@ -255,10 +294,52 @@ class AppointmentController extends Controller
             $updates['completed_at'] = now();
         }
 
+        $previous = $appointment->status->value;
         $appointment->update($updates);
+
+        $this->activityLog->record(
+            'appointment_status_updated',
+            __('Appointment status changed from :from to :to', [
+                'from' => $previous,
+                'to' => $status->value,
+            ]),
+            $appointment,
+            [
+                'from' => $previous,
+                'to' => $status->value,
+                'is_emergency' => $request->boolean('is_emergency'),
+            ],
+        );
+
+        $message = __('Appointment status updated.');
+
+        if ($status === AppointmentStatus::Completed && ! $appointment->invoice()->exists()) {
+            $message = __('Appointment completed. Raise an invoice when ready to collect payment.');
+        }
 
         return redirect()
             ->route('tenant.appointments.show', $appointment)
-            ->with('success', __('Appointment status updated.'));
+            ->with('success', $message);
+    }
+
+    public function updateClinicalNotes(
+        UpdateAppointmentClinicalNotesRequest $request,
+        Appointment $appointment,
+    ): RedirectResponse {
+        $this->authorize('updateClinicalNotes', $appointment);
+
+        $appointment->update($request->validated());
+
+        $this->activityLog->record(
+            'appointment_soap_updated',
+            __('SOAP notes updated for :patient', [
+                'patient' => $appointment->patient->full_name,
+            ]),
+            $appointment,
+        );
+
+        return redirect()
+            ->route('tenant.appointments.show', $appointment)
+            ->with('success', __('Clinical notes saved.'));
     }
 }

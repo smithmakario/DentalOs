@@ -37,8 +37,8 @@ class SubscriptionPlanManagementTest extends TestCase
         $organization = Organization::factory()->create();
         $organization->users()->attach($user->id, ['role' => OrganizationRole::Owner->value]);
 
-        $this->actingAs($user)->get(route('subscription-plans.index'))->assertForbidden();
-        $this->actingAs($user)->get(route('subscription-plans.create'))->assertForbidden();
+        $this->actingAs($user)->get(route('subscription-plans.index'))->assertRedirect(route('clinic.login'));
+        $this->actingAs($user)->get(route('subscription-plans.create'))->assertRedirect(route('clinic.login'));
     }
 
     public function test_super_admin_can_create_professional_subscription_plan(): void

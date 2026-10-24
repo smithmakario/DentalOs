@@ -37,4 +37,9 @@ class AppointmentPolicy
     {
         return $staff->hasPermission(StaffPermission::ManageAppointments);
     }
+
+    public function updateClinicalNotes(Staff $staff, Appointment $appointment): bool
+    {
+        return $staff->hasPermission(StaffPermission::ManageTreatments);
+    }
 }

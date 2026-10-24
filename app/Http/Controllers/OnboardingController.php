@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\ClinicOnboardingService;
 use App\Services\RegistrationRequestService;
+use App\Support\BranchIdentifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -28,6 +29,8 @@ class OnboardingController extends Controller
 
         return view('get-started.onboarding', [
             'registrationRequest' => $registrationRequest,
+            'appHost' => BranchIdentifier::baseHost(),
+            'suggestedBranchName' => BranchIdentifier::suggestBranchName($registrationRequest->name),
         ]);
     }
 

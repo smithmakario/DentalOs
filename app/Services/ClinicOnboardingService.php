@@ -11,6 +11,7 @@ use App\Models\Organization;
 use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Notifications\ClinicCreatedNotification;
 use Database\Seeders\ClinicServiceSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,6 @@ class ClinicOnboardingService
      *     logo?: UploadedFile|null,
      *     branch_name: string,
      *     branch_slug: string,
-     *     domain: string,
      *     admin_name: string,
      *     admin_email: string,
      *     admin_password: string,
@@ -45,7 +45,7 @@ class ClinicOnboardingService
                 'email' => $data['email'] ?? null,
                 'phone' => $data['phone'] ?? null,
                 'address' => $data['address'] ?? null,
-                'is_active' => true,
+                'is_active' => false,
             ]);
 
             $admin = User::query()->create([
@@ -63,11 +63,10 @@ class ClinicOnboardingService
             return $organization;
         });
 
-        $this->createBranch(
+        $branch = $this->createBranch(
             organization: $organization,
             branchName: $data['branch_name'],
             branchSlug: $data['branch_slug'],
-            domain: $data['domain'],
             contactEmail: $data['email'] ?? $data['admin_email'],
             adminEmail: $data['admin_email'],
             adminPassword: $data['admin_password'],
@@ -75,14 +74,29 @@ class ClinicOnboardingService
             logo: $data['logo'] ?? null,
         );
 
-        return $organization->loadCount('branches')->load('users');
+        $organization->update(['admin_branch_id' => $branch->getTenantKey()]);
+
+        $organization = $organization->loadCount('branches')->load(['users', 'adminBranch']);
+
+        $admin = $organization->users->firstWhere('email', $data['admin_email']);
+
+        if ($admin instanceof User) {
+            app(ClinicPrimaryAdminService::class)->syncCentralStaffMember(
+                $organization,
+                $admin,
+                plainPassword: $data['admin_password'],
+            );
+
+            $admin->notify(new ClinicCreatedNotification($organization, $branch));
+        }
+
+        return $organization;
     }
 
     /**
      * @param  array{
      *     branch_name: string,
      *     branch_slug: string,
-     *     domain: string,
      *     contact_email?: string|null,
      *     admin_email?: string|null,
      *     admin_password?: string|null,
@@ -91,24 +105,35 @@ class ClinicOnboardingService
      */
     public function addBranch(Organization $organization, array $data): Tenant
     {
-        return $this->createBranch(
+        $hasBranchAdmin = ($data['admin_email'] ?? null) !== null && ($data['admin_password'] ?? null) !== null;
+
+        $branch = $this->createBranch(
             organization: $organization,
             branchName: $data['branch_name'],
             branchSlug: $data['branch_slug'],
-            domain: $data['domain'],
             contactEmail: $data['contact_email'] ?? $organization->email,
             adminEmail: $data['admin_email'] ?? null,
             adminPassword: $data['admin_password'] ?? null,
             adminName: $data['admin_name'] ?? null,
-            provisionStaff: ($data['admin_email'] ?? null) !== null && ($data['admin_password'] ?? null) !== null,
+            provisionStaff: $hasBranchAdmin,
         );
+
+        if ($organization->admin_branch_id === null) {
+            $organization->update(['admin_branch_id' => $branch->getTenantKey()]);
+        }
+
+        // Primary clinic admin can operate on every branch — mirror their staff row here.
+        if (! $hasBranchAdmin && $organization->admin_branch_id !== null) {
+            app(PrimaryClinicAdminProvisioner::class)->syncFromAdminBranch($organization->fresh(), $branch);
+        }
+
+        return $branch;
     }
 
     private function createBranch(
         Organization $organization,
         string $branchName,
         string $branchSlug,
-        string $domain,
         ?string $contactEmail,
         ?string $adminEmail = null,
         ?string $adminPassword = null,
@@ -116,17 +141,19 @@ class ClinicOnboardingService
         bool $provisionStaff = true,
         ?UploadedFile $logo = null,
     ): Tenant {
-        $tenant = Tenant::query()->create([
-            'id' => $branchSlug,
-            'organization_id' => $organization->id,
-            'name' => $branchName,
-            'slug' => $branchSlug,
-            'is_active' => true,
-        ]);
+        try {
+            $tenant = Tenant::query()->create([
+                'id' => $branchSlug,
+                'organization_id' => $organization->id,
+                'name' => $branchName,
+                'slug' => $branchSlug,
+                'is_active' => (bool) $organization->is_active,
+            ]);
+        } catch (\Throwable $exception) {
+            $this->cleanupFailedTenant($branchSlug);
 
-        $tenant->domains()->create([
-            'domain' => $domain,
-        ]);
+            throw $exception;
+        }
 
         $tenant->run(function () use ($branchName, $contactEmail, $adminEmail, $adminPassword, $adminName, $provisionStaff, $logo): void {
             $logoPath = $logo?->store('logos', 'public');
@@ -156,7 +183,27 @@ class ClinicOnboardingService
             (new ClinicServiceSeeder)->run();
         });
 
-        return $tenant->load('domains');
+        return $tenant;
+    }
+
+    private function cleanupFailedTenant(string $branchSlug): void
+    {
+        $tenant = Tenant::query()->find($branchSlug);
+
+        if ($tenant === null) {
+            return;
+        }
+
+        try {
+            $tenant->delete();
+        } catch (\Throwable) {
+            Tenant::withoutEvents(function () use ($tenant): void {
+                $tenant->domains()->delete();
+                $tenant->delete();
+            });
+
+            app(TenantDatabaseCleanup::class)->dropIfExists($tenant);
+        }
     }
 
     private function uniqueOrganizationSlug(string $name): string

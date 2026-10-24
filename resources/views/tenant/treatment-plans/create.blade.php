@@ -11,6 +11,8 @@
             <p class="font-body-md text-on-surface-variant">{{ __('Create a proposed course of treatment for a patient.') }}</p>
         </div>
 
+        <x-tenant.working-branch path="/treatment-plans/create" class="mb-6" />
+
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
             <form method="POST" action="{{ route('tenant.treatment-plans.store') }}" class="space-y-6" novalidate>
                 @csrf

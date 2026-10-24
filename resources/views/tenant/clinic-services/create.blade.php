@@ -10,6 +10,8 @@
             <h2 class="font-h1 text-h1 text-on-surface mb-2">{{ __('Add Service') }}</h2>
         </div>
 
+        <x-tenant.working-branch path="/clinic-services/create" class="mb-6" />
+
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
             <form method="POST" action="{{ route('tenant.clinic-services.store') }}" class="space-y-6">
                 @csrf

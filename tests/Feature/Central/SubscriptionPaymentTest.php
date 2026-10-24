@@ -9,7 +9,6 @@ use App\Enums\PlatformRole;
 use App\Enums\SubscriptionPaymentStatus;
 use App\Models\Organization;
 use App\Models\PlatformPaymentSetting;
-use App\Models\SubscriptionPayment;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\PaystackService;
@@ -59,7 +58,7 @@ class SubscriptionPaymentTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('subscriptions.settings.edit'));
 
-        $response->assertForbidden();
+        $response->assertRedirect(route('clinic.login'));
     }
 
     public function test_manual_payment_submission_creates_awaiting_verification_record(): void
@@ -72,9 +71,8 @@ class SubscriptionPaymentTest extends TestCase
         ]);
 
         $plan = SubscriptionPlan::factory()->create();
-        $user = User::factory()->create(['platform_role' => PlatformRole::OrgAdmin]);
+        $user = User::factory()->create(['platform_role' => PlatformRole::SuperAdmin]);
         $organization = Organization::factory()->create();
-        $organization->users()->attach($user->id, ['role' => OrganizationRole::Owner->value]);
 
         $response = $this->actingAs($user)->post(route('subscriptions.manual.store', $organization), [
             'subscription_plan_id' => $plan->id,

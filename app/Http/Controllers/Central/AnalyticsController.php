@@ -15,6 +15,8 @@ class AnalyticsController extends Controller
 
     public function index(): View
     {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
         $metrics = $this->platformAnalyticsService->forUser(auth()->user());
 
         return view('central.analytics.index', $metrics);
@@ -22,6 +24,8 @@ class AnalyticsController extends Controller
 
     public function export(): StreamedResponse
     {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
         return $this->platformAnalyticsService->exportCsvForUser(auth()->user());
     }
 }

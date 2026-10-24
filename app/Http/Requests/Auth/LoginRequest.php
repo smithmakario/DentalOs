@@ -2,10 +2,10 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Enums\PlatformRole;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use App\Enums\PlatformRole;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -53,14 +53,21 @@ class LoginRequest extends FormRequest
 
         $user = Auth::guard('web')->user();
 
-        $hasAccess = $user->platform_role === PlatformRole::SuperAdmin
-            || ($user->platform_role === PlatformRole::OrgAdmin && $user->organizations()->exists());
-
-        if (! $hasAccess) {
+        if ($user->platform_role === PlatformRole::OrgAdmin) {
             Auth::guard('web')->logout();
+            RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => 'You do not have platform access.',
+                'email' => __('Primary clinic admins must sign in at the clinic portal (/clinic/login), not here.'),
+            ]);
+        }
+
+        if ($user->platform_role !== PlatformRole::SuperAdmin) {
+            Auth::guard('web')->logout();
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => __('You do not have platform access.'),
             ]);
         }
 

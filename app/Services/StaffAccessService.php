@@ -48,12 +48,13 @@ class StaffAccessService
 
     public function findMemberForTenantStaff(?int $organizationStaffId, string $email): ?StaffMember
     {
-        return tenancy()->central(function () use ($organizationStaffId, $email): ?StaffMember {
-            if ($organizationStaffId !== null) {
-                return StaffMember::query()->find($organizationStaffId);
-            }
+        // StaffMember uses CentralConnection — do not wrap in tenancy()->central().
+        // Ending tenancy here leaves subsequent controller queries on the central DB
+        // (e.g. Staff::loadCount against dental_os.appointments).
+        if ($organizationStaffId !== null) {
+            return StaffMember::query()->find($organizationStaffId);
+        }
 
-            return StaffMember::query()->where('email', $email)->first();
-        });
+        return StaffMember::query()->where('email', $email)->first();
     }
 }

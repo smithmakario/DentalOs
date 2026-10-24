@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\Tenant;
 
+use App\Models\Organization;
+use App\Services\ClinicSubscriptionAccess;
+use App\Services\StaffAccessService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -53,13 +56,27 @@ class StaffLoginRequest extends FormRequest
             ]);
         }
 
+        $organization = tenant()?->organization;
+
+        if ($organization instanceof Organization) {
+            $subscriptionAccess = app(ClinicSubscriptionAccess::class);
+
+            if (! $subscriptionAccess->allowsStaffAccess($organization)) {
+                Auth::guard('staff')->logout();
+
+                throw ValidationException::withMessages([
+                    'email' => $subscriptionAccess->denialReason($organization),
+                ]);
+            }
+        }
+
         if ($staff->organization_staff_id !== null) {
-            $staffMember = app(\App\Services\StaffAccessService::class)->findMemberForTenantStaff(
+            $staffMember = app(StaffAccessService::class)->findMemberForTenantStaff(
                 $staff->organization_staff_id,
                 $staff->email,
             );
 
-            if ($staffMember === null || ! app(\App\Services\StaffAccessService::class)->canAccessTenant($staffMember, (string) tenant('id'))) {
+            if ($staffMember === null || ! app(StaffAccessService::class)->canAccessTenant($staffMember, (string) tenant('id'))) {
                 Auth::guard('staff')->logout();
 
                 throw ValidationException::withMessages([

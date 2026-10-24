@@ -1,10 +1,8 @@
 <x-guest-layout>
     <div class="bg-white rounded-xl shadow-sm border border-outline-variant p-8 md:p-10">
         <div class="text-center mb-10">
-            <h1 class="font-h1 text-h2 text-on-surface mb-2">{{ __('Welcome Back') }}</h1>
-            <p class="font-body-md text-on-surface-variant">{{ __('Clinical Practice Management Access') }}</p>
-            {{-- <p class="text-sm text-gray-600 mt-1">Platform sign in</p> --}}
-            <p class="text-xs text-gray-500 mt-1">Super admin & organization dashboard</p>
+            <h1 class="font-h1 text-h2 text-on-surface mb-2">{{ __('Platform Sign In') }}</h1>
+            <p class="font-body-md text-on-surface-variant">{{ __('DentalOs operator access only') }}</p>
         </div>
 
         <x-auth-session-status class="mb-4 font-body-sm text-secondary" :status="session('status')" />
@@ -40,18 +38,7 @@
                         </a>
                     @endif
                 </div>
-                <div class="relative">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="lock">lock</span>
-                    <input
-                        class="w-full pl-10 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-body-md @error('password') border-error @enderror"
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="••••••••"
-                        required
-                        autocomplete="current-password"
-                    />
-                </div>
+                <x-password-input class="@error('password') border-error @enderror" />
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
             </div>
 
@@ -82,20 +69,15 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <button type="button" class="flex items-center justify-center gap-2 py-3 px-4 bg-white border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors font-label-md text-on-surface">
-                <img
-                    alt="Google"
-                    class="w-5 h-5"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDCvB8putYaRYajyivSt9-ge-eW-idGFZ4QqtyphSeVHP5WxyeKHBwfKEbmcC09huJ5ocBZMojrQQZtKD6P2fhHxKA7MVeoD-KFmsDJWb4MKXKfDpoNWjN6tc1BFidTHI_Qe3LZY6wHMG_jobYs6tV2wlXPKowGkQmVub9RZMoT4svS64gN1M_Z22f622Mlk7INLSLrRwOGbG6Gbfl-2TUmktydMrGijg9RdbZyXFDwgCpIOw2G5D5Hza4cfKhP4AkgP5JCEnEPYk"
-                />
-                <span>{{ __('Google') }}</span>
-            </button>
-            <button type="button" class="flex items-center justify-center gap-2 py-3 px-4 bg-white border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors font-label-md text-on-surface">
-                <span class="material-symbols-outlined text-outline" data-icon="hub">hub</span>
-                <span>{{ __('SSO') }}</span>
-            </button>
-        </div>
+        <a
+            href="{{ route('auth.google') }}"
+            class="flex w-full items-center justify-center gap-2 py-3 px-4 bg-white border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors font-label-md text-on-surface"
+        >
+            <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.4 14.6 2.4 12 2.4 6.9 2.4 2.7 6.6 2.7 11.7S6.9 21 12 21c5.4 0 9-3.8 9-9.1 0-.6-.1-1.1-.2-1.7H12z"/>
+            </svg>
+            <span>{{ __('Continue with Google') }}</span>
+        </a>
     </div>
 
     <p class="text-center mt-8 font-body-sm text-on-surface-variant">

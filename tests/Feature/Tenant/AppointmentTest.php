@@ -5,6 +5,7 @@ namespace Tests\Feature\Tenant;
 use App\Enums\AppointmentStatus;
 use App\Enums\StaffRole;
 use App\Models\Appointment;
+use App\Models\ClinicService;
 use App\Models\Patient;
 use App\Models\Staff;
 use Tests\TenantTestCase;
@@ -25,17 +26,28 @@ class AppointmentTest extends TenantTestCase
     {
         $staff = $this->createStaff(['role' => StaffRole::Receptionist]);
         $dentist = $this->createStaff(['role' => StaffRole::Dentist]);
-        $patient = $this->tenant->run(fn (): Patient => Patient::factory()->create());
+        [$patient, $serviceId] = $this->tenant->run(function (): array {
+            $patient = Patient::factory()->create();
+            $service = ClinicService::query()->create([
+                'code' => 'CHK-'.uniqid(),
+                'name' => 'Routine Checkup',
+                'category' => 'General',
+                'duration_minutes' => 30,
+                'price' => 5000,
+                'is_active' => true,
+            ]);
+
+            return [$patient, $service->id];
+        });
 
         $scheduledAt = now()->addDays(1)->setHour(10)->setMinute(0)->setSecond(0);
 
         $response = $this->actingAs($staff, 'staff')->post($this->tenantUrl('/appointments'), [
             'patient_id' => $patient->id,
             'provider_id' => $dentist->id,
-            'title' => 'Routine Checkup',
-            'scheduled_at' => $scheduledAt->toDateTimeString(),
-            'duration_minutes' => 30,
-            'status' => AppointmentStatus::Scheduled->value,
+            'service_id' => $serviceId,
+            'scheduled_date' => $scheduledAt->toDateString(),
+            'scheduled_time' => $scheduledAt->format('H:i'),
             'notes' => 'First visit',
         ]);
 

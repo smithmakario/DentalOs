@@ -4,17 +4,23 @@
 
         <div class="flex justify-between items-end mb-8">
             <div>
-                <h2 class="font-h1 text-h1 text-on-surface mb-2">{{ __('Billing & Invoices') }}</h2>
+                <h2 class="font-h1 text-h1 text-on-surface mb-2">{{ __('Invoices') }}</h2>
                 <p class="font-body-md text-body-md text-on-surface-variant">
-                    {{ __('Track patient invoices, payments, and outstanding balances for :branch.', ['branch' => tenant('name')]) }}
+                    {{ __('Track patient invoices and outstanding balances for :branch.', ['branch' => tenant('name')]) }}
                 </p>
             </div>
-            @can('create', App\Models\Invoice::class)
-                <a href="{{ route('tenant.invoices.create') }}" class="flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-lg font-label-md hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
-                    <span class="material-symbols-outlined text-[18px]">receipt_long</span>
-                    {{ __('New Invoice') }}
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ route('tenant.transactions.index') }}" class="flex items-center gap-2 border border-slate-200 text-on-surface px-6 py-2.5 rounded-lg font-label-md hover:bg-slate-50">
+                    <span class="material-symbols-outlined text-[18px]">payments</span>
+                    {{ __('Transactions') }}
                 </a>
-            @endcan
+                @can('create', App\Models\Invoice::class)
+                    <a href="{{ route('tenant.invoices.create') }}" class="flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-lg font-label-md hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
+                        <span class="material-symbols-outlined text-[18px]">receipt_long</span>
+                        {{ __('New Invoice') }}
+                    </a>
+                @endcan
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

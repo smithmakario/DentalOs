@@ -12,6 +12,7 @@ use App\Models\Organization;
 use App\Models\PlatformPaymentSetting;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Notifications\AuditEventAlert;
 use App\Services\AuditLogService;
 use App\Services\SubscriptionPaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,16 +34,13 @@ class PlatformOpsTest extends TestCase
         $response->assertSee(__('Revenue Trend'));
     }
 
-    public function test_org_admin_can_view_analytics_for_their_scope(): void
+    public function test_org_admin_cannot_view_platform_analytics(): void
     {
         $user = User::factory()->create(['platform_role' => PlatformRole::OrgAdmin]);
         $organization = Organization::factory()->create();
         $organization->users()->attach($user->id, ['role' => OrganizationRole::Owner->value]);
 
-        $response = $this->actingAs($user)->get(route('analytics.index'));
-
-        $response->assertOk();
-        $response->assertSee(__('Organizations'));
+        $this->actingAs($user)->get(route('analytics.index'))->assertRedirect(route('clinic.login'));
     }
 
     public function test_super_admin_can_view_audit_logs(): void
@@ -65,32 +63,13 @@ class PlatformOpsTest extends TestCase
         $response->assertSee(__('Payment settings updated'));
     }
 
-    public function test_org_admin_only_sees_their_organization_audit_logs(): void
+    public function test_org_admin_cannot_view_platform_audit_logs(): void
     {
         $user = User::factory()->create(['platform_role' => PlatformRole::OrgAdmin]);
         $owned = Organization::factory()->create(['name' => 'Owned Clinic']);
-        $other = Organization::factory()->create(['name' => 'Other Clinic']);
         $owned->users()->attach($user->id, ['role' => OrganizationRole::Owner->value]);
 
-        AuditLog::query()->create([
-            'action' => AuditAction::ClinicUpdated,
-            'organization_id' => $owned->id,
-            'description' => 'Updated owned clinic.',
-            'created_at' => now(),
-        ]);
-
-        AuditLog::query()->create([
-            'action' => AuditAction::ClinicUpdated,
-            'organization_id' => $other->id,
-            'description' => 'Updated other clinic.',
-            'created_at' => now(),
-        ]);
-
-        $response = $this->actingAs($user)->get(route('audit-logs.index'));
-
-        $response->assertOk();
-        $response->assertSee('Updated owned clinic.');
-        $response->assertDontSee('Updated other clinic.');
+        $this->actingAs($user)->get(route('audit-logs.index'))->assertRedirect(route('clinic.login'));
     }
 
     public function test_clinic_update_creates_audit_log_entry(): void
@@ -179,7 +158,7 @@ class PlatformOpsTest extends TestCase
             $organization,
         );
 
-        Notification::assertSentTo($superAdmin, \App\Notifications\AuditEventAlert::class);
+        Notification::assertSentTo($superAdmin, AuditEventAlert::class);
     }
 
     public function test_low_priority_audit_events_do_not_notify_super_admins(): void

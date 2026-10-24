@@ -4,6 +4,7 @@ namespace Tests\Feature\Central;
 
 use App\Enums\OrganizationRole;
 use App\Enums\PlatformRole;
+use App\Http\Controllers\Tenant\MediaController;
 use App\Models\BranchProfile;
 use App\Models\Organization;
 use App\Models\User;
@@ -41,7 +42,7 @@ class ClinicManagementTest extends TestCase
         $response->assertSee(__('Onboard New Clinic'));
     }
 
-    public function test_org_admin_cannot_view_create_clinic_form(): void
+    public function test_org_admin_cannot_access_platform_clinic_routes(): void
     {
         $user = User::factory()->create([
             'platform_role' => PlatformRole::OrgAdmin,
@@ -50,40 +51,11 @@ class ClinicManagementTest extends TestCase
         $organization = Organization::factory()->create();
         $organization->users()->attach($user->id, ['role' => OrganizationRole::Owner->value]);
 
-        $response = $this->actingAs($user)->get(route('clinics.create'));
+        $this->actingAs($user)->get(route('clinics.create'))
+            ->assertRedirect(route('clinic.login'));
 
-        $response->assertForbidden();
-    }
-
-    public function test_org_admin_can_edit_their_clinic(): void
-    {
-        $user = User::factory()->create([
-            'platform_role' => PlatformRole::OrgAdmin,
-        ]);
-
-        $organization = Organization::factory()->create();
-        $organization->users()->attach($user->id, ['role' => OrganizationRole::Owner->value]);
-
-        $response = $this->actingAs($user)->get(route('clinics.edit', $organization));
-
-        $response->assertOk();
-        $response->assertSee(__('Edit Clinic'));
-    }
-
-    public function test_org_admin_cannot_edit_another_clinic(): void
-    {
-        $user = User::factory()->create([
-            'platform_role' => PlatformRole::OrgAdmin,
-        ]);
-
-        $ownedOrganization = Organization::factory()->create();
-        $ownedOrganization->users()->attach($user->id, ['role' => OrganizationRole::Owner->value]);
-
-        $otherOrganization = Organization::factory()->create();
-
-        $response = $this->actingAs($user)->get(route('clinics.edit', $otherOrganization));
-
-        $response->assertForbidden();
+        $this->actingAs($user)->get(route('clinics.edit', $organization))
+            ->assertRedirect(route('clinic.login'));
     }
 
     public function test_store_clinic_requires_valid_payload(): void
@@ -99,7 +71,6 @@ class ClinicManagementTest extends TestCase
             'type',
             'branch_name',
             'branch_slug',
-            'domain',
             'admin_name',
             'admin_email',
             'admin_password',
@@ -126,46 +97,13 @@ class ClinicManagementTest extends TestCase
             'email' => 'contact@bright.test',
             'branch_name' => 'Main Branch',
             'branch_slug' => 'bright-main',
-            'domain' => 'bright.localhost',
             'admin_name' => 'Clinic Admin',
             'admin_email' => 'admin@bright.test',
             'admin_password' => 'password',
         ]);
 
-        $response->assertRedirect(route('clinics.edit', $organization));
+        $response->assertRedirect(route('clinics.show', $organization));
         $response->assertSessionHas('status');
-    }
-
-    public function test_store_clinic_normalizes_domain_before_persisting(): void
-    {
-        Storage::fake('public');
-
-        $branchSlug = 'domain-'.fake()->unique()->lexify('????');
-
-        $user = User::factory()->create([
-            'platform_role' => PlatformRole::SuperAdmin,
-        ]);
-
-        $response = $this->actingAs($user)->post(route('clinics.store'), [
-            'name' => 'Domain Normalize Dental',
-            'type' => 'single',
-            'email' => 'contact@domain.test',
-            'branch_name' => 'Main Branch',
-            'branch_slug' => $branchSlug,
-            'domain' => 'http://'.$branchSlug.'.localhost:8000',
-            'admin_name' => 'Clinic Admin',
-            'admin_email' => 'admin@domain.test',
-            'admin_password' => 'password',
-        ]);
-
-        $organization = Organization::query()->where('name', 'Domain Normalize Dental')->firstOrFail();
-
-        $response->assertRedirect(route('clinics.edit', $organization));
-
-        $this->assertDatabaseHas('domains', [
-            'domain' => $branchSlug.'.localhost',
-            'tenant_id' => $branchSlug,
-        ]);
     }
 
     public function test_store_clinic_rejects_invalid_logo(): void
@@ -180,7 +118,6 @@ class ClinicManagementTest extends TestCase
             'email' => 'contact@bright.test',
             'branch_name' => 'Main Branch',
             'branch_slug' => 'bright-main',
-            'domain' => 'bright.localhost',
             'admin_name' => 'Clinic Admin',
             'admin_email' => 'admin@bright.test',
             'admin_password' => 'password',
@@ -206,7 +143,6 @@ class ClinicManagementTest extends TestCase
             'email' => 'contact@bright.test',
             'branch_name' => 'Main Branch',
             'branch_slug' => $branchSlug,
-            'domain' => $branchSlug.'.localhost',
             'admin_name' => 'Clinic Admin',
             'admin_email' => 'admin@bright.test',
             'admin_password' => 'password',
@@ -216,7 +152,7 @@ class ClinicManagementTest extends TestCase
         $organization = Organization::query()->where('name', 'Bright Dental')->firstOrFail();
         $tenant = $organization->branches()->firstOrFail();
 
-        $response->assertRedirect(route('clinics.edit', $organization));
+        $response->assertRedirect(route('clinics.show', $organization));
 
         $tenant->run(function (): void {
             $profile = BranchProfile::query()->firstOrFail();
@@ -224,6 +160,25 @@ class ClinicManagementTest extends TestCase
             $this->assertNotNull($profile->logo_path);
             Storage::disk('public')->assertExists($profile->logo_path);
         });
+
+        $logoUrl = $tenant->run(fn (): ?string => BranchProfile::query()->first()?->logoUrl());
+
+        $this->assertNotNull($logoUrl);
+        $this->assertStringContainsString('/'.$organization->slug.'/'.$tenant->slug.'/media/', $logoUrl);
+
+        // Storage::fake + filesystem tenancy do not share the same disk during HTTP;
+        // assert the media controller can stream the logo in tenant context instead.
+        $tenant->run(function () use ($logoUrl): void {
+            $path = BranchProfile::query()->value('logo_path');
+            $response = app(MediaController::class)(request(), $path);
+            $this->assertSame(200, $response->getStatusCode());
+            $this->assertStringEndsWith('/media/'.$path, parse_url($logoUrl, PHP_URL_PATH) ?? '');
+        });
+
+        $this->actingAs($user)
+            ->get(route('clinics.show', $organization))
+            ->assertOk()
+            ->assertSee($logoUrl, false);
     }
 
     public function test_super_admin_can_add_branch_without_admin_credentials(): void
@@ -241,7 +196,6 @@ class ClinicManagementTest extends TestCase
         $response = $this->actingAs($user)->post(route('clinics.branches.store', $organization), [
             'branch_name' => 'Uptown Branch',
             'branch_slug' => $branchSlug,
-            'domain' => $branchSlug.'.localhost',
         ]);
 
         $response->assertRedirect(route('clinics.branches.index', $organization));
@@ -254,8 +208,7 @@ class ClinicManagementTest extends TestCase
             'slug' => $branchSlug,
         ]);
 
-        $this->assertDatabaseHas('domains', [
-            'domain' => $branchSlug.'.localhost',
+        $this->assertDatabaseMissing('domains', [
             'tenant_id' => $branchSlug,
         ]);
     }
@@ -266,13 +219,15 @@ class ClinicManagementTest extends TestCase
             'platform_role' => PlatformRole::SuperAdmin,
         ]);
 
-        Organization::factory()->create(['name' => 'Active Clinic', 'is_active' => true]);
-        Organization::factory()->create(['name' => 'Inactive Clinic', 'is_active' => false]);
+        $active = Organization::factory()->create(['name' => 'Active Clinic', 'is_active' => true]);
+        $inactive = Organization::factory()->create(['name' => 'Inactive Clinic', 'is_active' => false]);
 
         $response = $this->actingAs($user)->get(route('clinics.index', ['status' => 'active']));
 
         $response->assertOk();
         $response->assertSee('Active Clinic');
-        $response->assertDontSee('Inactive Clinic');
+        $response->assertSee('ID: DF-'.str_pad((string) $active->id, 5, '0', STR_PAD_LEFT));
+        // Inactive clinics still appear in the notification feed; assert against the table row id.
+        $response->assertDontSee('ID: DF-'.str_pad((string) $inactive->id, 5, '0', STR_PAD_LEFT));
     }
 }

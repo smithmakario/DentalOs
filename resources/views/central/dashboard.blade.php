@@ -14,8 +14,8 @@
 <x-app-layout>
     <div class="p-xl max-w-7xl mx-auto">
         <!-- Page Header -->
-        <div class="mb-xl flex justify-between items-end">
-            <div>
+        <div class="mb-xl flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="min-w-0">
                 <h2 class="font-h1 text-on-surface">{{ __('Platform Overview') }}</h2>
                 <p class="text-body-lg text-outline mt-1">
                     @if ($isSuperAdmin)
@@ -25,18 +25,20 @@
                     @endif
                 </p>
             </div>
-            <div class="flex gap-md">
-                @if ($isSuperAdmin)
-                    <a href="{{ route('subscriptions.settings.edit') }}" class="flex items-center gap-2 px-md py-sm bg-white border border-outline-variant rounded-xl font-label-md text-on-surface hover:bg-surface-container-low transition-colors">
-                        <span class="material-symbols-outlined text-sm" data-icon="account_balance">account_balance</span>
-                        {{ __('Bank Details') }}
-                    </a>
-                @endif
+            <div class="flex flex-col gap-3 sm:items-start lg:items-end shrink-0">
                 <span class="text-body-sm text-outline font-label-sm">{{ __('Last 30 days vs prior 30 days') }}</span>
-                <a href="{{ route('analytics.export') }}" class="flex items-center gap-2 px-md py-sm bg-primary text-white rounded-xl font-label-md hover:opacity-90 transition-opacity">
-                    <span class="material-symbols-outlined text-sm" data-icon="download">download</span>
-                    {{ __('Export Report') }}
-                </a>
+                <div class="flex flex-wrap gap-3">
+                    @if ($isSuperAdmin)
+                        <a href="{{ route('subscriptions.settings.edit') }}" class="inline-flex items-center gap-2 px-md py-sm bg-white border border-outline-variant rounded-xl font-label-md text-on-surface hover:bg-surface-container-low transition-colors">
+                            <span class="material-symbols-outlined text-sm" data-icon="account_balance">account_balance</span>
+                            {{ __('Bank Details') }}
+                        </a>
+                    @endif
+                    <a href="{{ route('analytics.export') }}" class="inline-flex items-center gap-2 px-md py-sm bg-primary text-white rounded-xl font-label-md hover:opacity-90 transition-opacity">
+                        <span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+                        {{ __('Export Report') }}
+                    </a>
+                </div>
             </div>
         </div>
 

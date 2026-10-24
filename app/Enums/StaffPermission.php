@@ -11,4 +11,5 @@ enum StaffPermission: string
     case ManageStaff = 'manage_staff';
     case ManageBranchSettings = 'manage_branch_settings';
     case ManageBilling = 'manage_billing';
+    case ManageClinicBranches = 'manage_clinic_branches';
 }

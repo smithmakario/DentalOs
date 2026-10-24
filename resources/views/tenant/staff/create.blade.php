@@ -11,6 +11,8 @@
             <p class="font-body-md text-on-surface-variant">{{ __('Create a new team member account for this branch.') }}</p>
         </div>
 
+        <x-tenant.working-branch path="/staff/create" class="mb-6" />
+
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
             <form action="{{ route('tenant.staff.store') }}" class="space-y-6" enctype="multipart/form-data" method="POST">
                 @csrf

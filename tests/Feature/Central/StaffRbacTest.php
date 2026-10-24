@@ -102,27 +102,51 @@ class StaffRbacTest extends TestCase
         ]);
     }
 
-    public function test_org_admin_can_manage_staff_for_their_clinic(): void
+    public function test_super_admin_sees_primary_admin_in_clinic_staff_list(): void
+    {
+        $superAdmin = User::factory()->create(['platform_role' => PlatformRole::SuperAdmin]);
+        $suffix = fake()->unique()->lexify('????');
+
+        $this->actingAs($superAdmin)->post(route('clinics.store'), [
+            'name' => 'Staff List Clinic '.$suffix,
+            'type' => 'single',
+            'email' => 'contact@staff-list-'.$suffix.'.test',
+            'admin_name' => 'Primary Admin',
+            'admin_email' => 'primary@staff-list-'.$suffix.'.test',
+            'admin_password' => 'password',
+        ])->assertRedirect();
+
+        $organization = Organization::query()
+            ->where('email', 'contact@staff-list-'.$suffix.'.test')
+            ->firstOrFail();
+
+        $this->assertDatabaseHas('staff_members', [
+            'organization_id' => $organization->id,
+            'email' => 'primary@staff-list-'.$suffix.'.test',
+            'role' => StaffRole::ClinicAdmin->value,
+            'has_global_branch_access' => true,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('clinics.staff.index', $organization))
+            ->assertOk()
+            ->assertSee('Primary Admin')
+            ->assertSee('primary@staff-list-'.$suffix.'.test')
+            ->assertDontSee(__('No staff members yet.'));
+    }
+
+    public function test_org_admin_cannot_access_platform_staff_routes(): void
     {
         $user = User::factory()->create(['platform_role' => PlatformRole::OrgAdmin]);
         $organization = Organization::factory()->create();
         $organization->users()->attach($user->id, ['role' => OrganizationRole::Owner->value]);
-
-        $response = $this->actingAs($user)->get(route('clinics.staff.index', $organization));
-
-        $response->assertOk();
-    }
-
-    public function test_org_admin_cannot_view_staff_for_another_clinic(): void
-    {
-        $user = User::factory()->create(['platform_role' => PlatformRole::OrgAdmin]);
-        $ownedOrganization = Organization::factory()->create();
         $otherOrganization = Organization::factory()->create();
-        $ownedOrganization->users()->attach($user->id, ['role' => OrganizationRole::Owner->value]);
 
-        $response = $this->actingAs($user)->get(route('clinics.staff.index', $otherOrganization));
+        $this->actingAs($user)->get(route('clinics.staff.index', $organization))
+            ->assertRedirect(route('clinic.login'));
 
-        $response->assertForbidden();
+        $this->actingAs($user)->get(route('clinics.staff.index', $otherOrganization))
+            ->assertRedirect(route('clinic.login'));
     }
 
     public function test_super_admin_can_update_staff_member(): void
