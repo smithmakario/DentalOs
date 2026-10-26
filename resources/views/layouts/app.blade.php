@@ -1,9 +1,8 @@
-
-    <!DOCTYPE html>
-
-    <html class="light" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<!DOCTYPE html>
+<html class="light" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         @include('layouts.partials.design-system-head')
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     </head>
 
     <body class="font-sans antialiased">

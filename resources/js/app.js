@@ -1,7 +1,4 @@
 import './bootstrap';
 
-import Alpine from 'alpinejs';
-
-window.Alpine = Alpine;
-
-Alpine.start();
+// Alpine.js is loaded from the CDN in Blade layouts (app/tenant/clinic/guest)
+// so clinic onboarding wizards keep working when Vite assets are not built yet.
