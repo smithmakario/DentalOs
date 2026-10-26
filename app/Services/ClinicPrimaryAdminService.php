@@ -10,6 +10,7 @@ use App\Models\Staff;
 use App\Models\StaffMember;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Notifications\ClinicPrimaryAdminUpdatedNotification;
 use App\Support\TenantPortal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -100,6 +101,18 @@ class ClinicPrimaryAdminService
             $previousEmail,
             $password,
         );
+
+        $emailChanged = $previousEmail === null
+            || strcasecmp((string) $previousEmail, $admin->email) !== 0;
+
+        if ($emailChanged || $password !== null) {
+            $admin->notify(new ClinicPrimaryAdminUpdatedNotification(
+                organization: $organization->fresh(),
+                adminBranch: $organization->fresh()->adminBranch,
+                plainPassword: $password,
+                previousEmail: $previousEmail,
+            ));
+        }
 
         return $admin;
     }
