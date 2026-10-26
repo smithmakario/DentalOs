@@ -87,7 +87,11 @@ class ClinicOnboardingService
                 plainPassword: $data['admin_password'],
             );
 
-            $admin->notify(new ClinicCreatedNotification($organization, $branch));
+            $admin->notify(new ClinicCreatedNotification(
+                $organization,
+                $branch,
+                plainPassword: $data['admin_password'],
+            ));
         }
 
         return $organization;

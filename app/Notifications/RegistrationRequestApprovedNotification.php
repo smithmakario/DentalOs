@@ -3,15 +3,11 @@
 namespace App\Notifications;
 
 use App\Models\OrganizationRegistrationRequest;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class RegistrationRequestApprovedNotification extends Notification implements ShouldQueue
+class RegistrationRequestApprovedNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public OrganizationRegistrationRequest $registrationRequest,
     ) {}

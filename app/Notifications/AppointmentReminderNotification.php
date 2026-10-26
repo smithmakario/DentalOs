@@ -4,15 +4,11 @@ namespace App\Notifications;
 
 use App\Models\Appointment;
 use App\Models\BranchProfile;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AppointmentReminderNotification extends Notification implements ShouldQueue
+class AppointmentReminderNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public Appointment $appointment,
         public string $window,

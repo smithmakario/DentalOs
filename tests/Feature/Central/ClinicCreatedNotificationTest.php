@@ -46,21 +46,22 @@ class ClinicCreatedNotificationTest extends TestCase
             ClinicCreatedNotification::class,
             function (ClinicCreatedNotification $notification) use ($organization, $branch): bool {
                 return $notification->organization->is($organization)
-                    && $notification->adminBranch->is($branch);
+                    && $notification->adminBranch->is($branch)
+                    && $notification->plainPassword === 'password';
             },
         );
     }
 
-    public function test_create_clinic_form_includes_password_visibility_control(): void
+    public function test_create_clinic_form_includes_admin_password_field(): void
     {
         $user = User::factory()->create([
             'platform_role' => PlatformRole::SuperAdmin,
         ]);
 
-        $response = $this->actingAs($user)->get(route('clinics.create'));
-
-        $response->assertOk();
-        $response->assertSee('showAdminPassword', false);
-        $response->assertSee('visibility_off', false);
+        $this->actingAs($user)
+            ->get(route('clinics.create'))
+            ->assertOk()
+            ->assertSee('name="admin_password"', false)
+            ->assertSee(__('Primary Admin'));
     }
 }
