@@ -201,8 +201,6 @@ class ClinicOnboardingService
                 $tenant->domains()->delete();
                 $tenant->delete();
             });
-
-            app(TenantDatabaseCleanup::class)->dropIfExists($tenant);
         }
     }
 

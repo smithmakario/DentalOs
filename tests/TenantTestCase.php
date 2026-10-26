@@ -49,45 +49,22 @@ abstract class TenantTestCase extends TestCase
             'current_period_end' => now()->addMonth(),
         ]);
 
-        $this->tenant = Tenant::withoutEvents(function () use ($tenantId): Tenant {
-            $tenant = Tenant::query()->create([
-                'id' => $tenantId,
-                'organization_id' => $this->organization->id,
-                'name' => 'Test Branch',
-                'slug' => $tenantId,
-                'is_active' => true,
-            ]);
-
-            $tenant->domains()->create(['domain' => $this->tenantDomain]);
-
-            return $tenant;
-        });
-
-        $this->tenant->database()->manager()->createDatabase($this->tenant);
-
-        $this->artisan('tenants:migrate', [
-            '--tenants' => [$this->tenant->id],
-            '--no-interaction' => true,
+        // Single-DB tenancy: only create the tenant row (+ domain). Schema is central.
+        $this->tenant = Tenant::query()->create([
+            'id' => $tenantId,
+            'organization_id' => $this->organization->id,
+            'name' => 'Test Branch',
+            'slug' => $tenantId,
+            'is_active' => true,
         ]);
+
+        $this->tenant->domains()->create(['domain' => $this->tenantDomain]);
     }
 
     protected function tearDown(): void
     {
         if (tenancy()->initialized) {
             tenancy()->end();
-        }
-
-        if (isset($this->tenant)) {
-            try {
-                $this->tenant->database()->manager()->deleteDatabase($this->tenant);
-            } catch (\Throwable) {
-                //
-            }
-
-            Tenant::withoutEvents(function (): void {
-                $this->tenant->domains()->delete();
-                $this->tenant->delete();
-            });
         }
 
         parent::tearDown();

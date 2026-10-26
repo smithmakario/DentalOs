@@ -5,21 +5,16 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Http\Middleware\InitializeTenancyByOrganizationBranchPath;
-use App\Jobs\Tenancy\DropOrphanTenantDatabase;
-use App\Services\TenantDatabaseCleanup;
 use App\Support\TenantPortal;
-use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
-use Stancl\JobPipeline\JobPipeline;
 use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Events\TenancyEnded;
 use Stancl\Tenancy\Events\TenancyInitialized;
-use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
 
@@ -33,33 +28,14 @@ class TenancyServiceProvider extends ServiceProvider
         return [
             // Tenant events
             Events\CreatingTenant::class => [],
-            Events\TenantCreated::class => [
-                JobPipeline::make([
-                    // migrate:fresh leaves tenant MySQL/SQLite DBs behind; drop orphans before create.
-                    DropOrphanTenantDatabase::class,
-                    Jobs\CreateDatabase::class,
-                    Jobs\MigrateDatabase::class,
-                    // Jobs\SeedDatabase::class,
-
-                    // Your own jobs to prepare the tenant.
-                    // Provision API keys, create S3 buckets, anything you want!
-
-                ])->send(function (Events\TenantCreated $event) {
-                    return $event->tenant;
-                })->shouldBeQueued(false), // `false` by default, but you probably want to make this `true` for production.
-            ],
+            // Single-DB tenancy: no per-tenant CREATE/MIGRATE/DROP DATABASE.
+            Events\TenantCreated::class => [],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],
             Events\UpdatingTenant::class => [],
             Events\TenantUpdated::class => [],
             Events\DeletingTenant::class => [],
-            Events\TenantDeleted::class => [
-                JobPipeline::make([
-                    Jobs\DeleteDatabase::class,
-                ])->send(function (Events\TenantDeleted $event) {
-                    return $event->tenant;
-                })->shouldBeQueued(false), // `false` by default, but you probably want to make this `true` for production.
-            ],
+            Events\TenantDeleted::class => [],
 
             // Domain events
             Events\CreatingDomain::class => [],
@@ -114,32 +90,8 @@ class TenancyServiceProvider extends ServiceProvider
         $this->bootEvents();
         $this->mapRoutes();
         $this->configureTenantGuard();
-        $this->cleanupOrphanDatabasesAfterMigrateFresh();
 
         $this->makeTenancyMiddlewareHighestPriority();
-    }
-
-    protected function cleanupOrphanDatabasesAfterMigrateFresh(): void
-    {
-        Event::listen(CommandFinished::class, function (CommandFinished $event): void {
-            if ($event->exitCode !== 0) {
-                return;
-            }
-
-            if (! in_array($event->command, ['migrate:fresh', 'migrate:refresh'], true)) {
-                return;
-            }
-
-            $dropped = app(TenantDatabaseCleanup::class)->dropOrphanDatabases();
-
-            if ($dropped === [] || ! $event->output->isVerbose()) {
-                return;
-            }
-
-            foreach ($dropped as $database) {
-                $event->output->writeln('<info>Dropped orphan tenant database:</info> '.$database);
-            }
-        });
     }
 
     protected function configureTenantGuard(): void
@@ -161,10 +113,6 @@ class TenancyServiceProvider extends ServiceProvider
     {
         foreach ($this->events() as $event => $listeners) {
             foreach ($listeners as $listener) {
-                if ($listener instanceof JobPipeline) {
-                    $listener = $listener->toListener();
-                }
-
                 Event::listen($event, $listener);
             }
         }

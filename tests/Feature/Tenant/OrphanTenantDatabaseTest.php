@@ -3,28 +3,22 @@
 namespace Tests\Feature\Tenant;
 
 use App\Enums\PlatformRole;
+use App\Models\BranchProfile;
 use App\Models\Organization;
+use App\Models\Staff;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\ClinicOnboardingService;
-use App\Services\TenantDatabaseCleanup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class OrphanTenantDatabaseTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_creating_branch_reuses_orphan_sqlite_database_file(): void
+    public function test_adding_branch_does_not_require_create_database_privilege(): void
     {
         $branchSlug = 'orphan-branch-'.fake()->unique()->lexify('????');
-        $databaseName = config('tenancy.database.prefix').$branchSlug;
-        $databasePath = database_path($databaseName);
-
-        File::put($databasePath, '');
-
-        $this->assertTrue(File::exists($databasePath));
 
         $organization = Organization::factory()->create([
             'is_active' => false,
@@ -41,35 +35,19 @@ class OrphanTenantDatabaseTest extends TestCase
             'id' => $branchSlug,
             'organization_id' => $organization->id,
         ]);
-        $this->assertTrue(File::exists($databasePath));
 
-        File::delete($databasePath);
-        $tenant->database()->manager()->deleteDatabase($tenant);
+        $tenant->run(function () use ($branchSlug): void {
+            $this->assertDatabaseHas('branch_profiles', [
+                'tenant_id' => $branchSlug,
+                'name' => 'Orphan Branch',
+            ]);
+        });
     }
 
-    public function test_cleanup_drops_orphan_sqlite_databases_without_tenant_rows(): void
-    {
-        $branchSlug = 'leftover-'.fake()->unique()->lexify('????');
-        $databaseName = config('tenancy.database.prefix').$branchSlug;
-        $databasePath = database_path($databaseName);
-
-        File::put($databasePath, '');
-
-        $this->assertDatabaseMissing('tenants', ['id' => $branchSlug]);
-
-        $dropped = app(TenantDatabaseCleanup::class)->dropOrphanDatabases();
-
-        $this->assertContains($databaseName, $dropped);
-        $this->assertFalse(File::exists($databasePath));
-    }
-
-    public function test_super_admin_can_create_clinic_when_orphan_database_exists(): void
+    public function test_super_admin_can_create_clinic_in_single_database(): void
     {
         $suffix = fake()->unique()->lexify('????');
         $branchSlug = 'healing-stream-'.$suffix;
-        $databaseName = config('tenancy.database.prefix').$branchSlug;
-
-        File::put(database_path($databaseName), '');
 
         $user = User::factory()->create([
             'platform_role' => PlatformRole::SuperAdmin,
@@ -95,6 +73,15 @@ class OrphanTenantDatabaseTest extends TestCase
         ]);
 
         $tenant = Tenant::query()->findOrFail($branchSlug);
-        $tenant->database()->manager()->deleteDatabase($tenant);
+        $adminEmail = 'admin@healing-'.$suffix.'.test';
+
+        $tenant->run(function () use ($branchSlug, $adminEmail): void {
+            $this->assertSame(1, BranchProfile::query()->where('tenant_id', $branchSlug)->count());
+            $this->assertSame(1, Staff::query()->where('tenant_id', $branchSlug)->count());
+            $this->assertDatabaseHas('tenant_users', [
+                'tenant_id' => $branchSlug,
+                'email' => $adminEmail,
+            ]);
+        });
     }
 }

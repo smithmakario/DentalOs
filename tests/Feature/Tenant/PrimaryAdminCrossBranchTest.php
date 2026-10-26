@@ -30,25 +30,15 @@ class PrimaryAdminCrossBranchTest extends TenantTestCase
         $suffix = Str::lower(Str::random(6));
         $satelliteId = 'sat-'.$suffix;
 
-        $this->satellite = Tenant::withoutEvents(function () use ($satelliteId): Tenant {
-            $tenant = Tenant::query()->create([
-                'id' => $satelliteId,
-                'organization_id' => $this->organization->id,
-                'name' => 'Satellite Branch',
-                'slug' => $satelliteId,
-                'is_active' => true,
-            ]);
-
-            $tenant->domains()->create(['domain' => $satelliteId.'.localhost']);
-
-            return $tenant;
-        });
-
-        $this->satellite->database()->manager()->createDatabase($this->satellite);
-        $this->artisan('tenants:migrate', [
-            '--tenants' => [$this->satellite->id],
-            '--no-interaction' => true,
+        $this->satellite = Tenant::query()->create([
+            'id' => $satelliteId,
+            'organization_id' => $this->organization->id,
+            'name' => 'Satellite Branch',
+            'slug' => $satelliteId,
+            'is_active' => true,
         ]);
+
+        $this->satellite->domains()->create(['domain' => $satelliteId.'.localhost']);
     }
 
     protected function tearDown(): void
@@ -56,12 +46,6 @@ class PrimaryAdminCrossBranchTest extends TenantTestCase
         if (isset($this->satellite)) {
             if (tenancy()->initialized) {
                 tenancy()->end();
-            }
-
-            try {
-                $this->satellite->database()->manager()->deleteDatabase($this->satellite);
-            } catch (\Throwable) {
-                //
             }
 
             Tenant::withoutEvents(function (): void {

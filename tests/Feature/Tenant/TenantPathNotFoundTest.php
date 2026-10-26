@@ -23,7 +23,7 @@ class TenantPathNotFoundTest extends TestCase
         $response->assertNotFound();
         $response->assertSee(__('Branch unavailable'));
         $response->assertSee(__('This clinic could not be found.'));
-        $response->assertSee(__('Platform login'));
+        $response->assertSee(__('Clinic login'));
         $response->assertDontSee('TenantCouldNotBeIdentifiedByPathException');
     }
 

@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class ClinicActivityLog extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
         'staff_id',
         'action',

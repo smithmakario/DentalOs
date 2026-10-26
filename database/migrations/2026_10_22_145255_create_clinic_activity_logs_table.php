@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('clinic_activity_logs', function (Blueprint $table) {
+            $table->string('tenant_id')->index();
+            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            $table->id();
+            $table->foreignId('staff_id')->nullable()->constrained('tenant_users')->nullOnDelete();
+            $table->string('action');
+            $table->string('description');
+            $table->nullableMorphs('subject');
+            $table->json('properties')->nullable();
+            $table->string('ip_address', 45)->nullable();
+            $table->timestamps();
+
+            $table->index('action');
+            $table->index('created_at');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('clinic_activity_logs');
+    }
+};

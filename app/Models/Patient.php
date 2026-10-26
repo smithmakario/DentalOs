@@ -9,9 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Patient extends Authenticatable
 {
+    use BelongsToTenant;
+
     /** @use HasFactory<PatientFactory> */
     use HasApiTokens, HasFactory;
 

@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class TreatmentPlanItem extends Model
 {
+    use BelongsToTenant;
     use HasFactory;
 
     protected $fillable = [

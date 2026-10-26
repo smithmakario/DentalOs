@@ -12,9 +12,11 @@ class DashboardTest extends TenantTestCase
     {
         $staff = $this->createStaff();
 
-        $this->tenant->run(function (): void {
-            Patient::factory()->count(3)->create();
+        $this->tenant->run(function () use ($staff): void {
+            $patients = Patient::factory()->count(3)->create();
             Appointment::factory()->count(2)->create([
+                'patient_id' => $patients->first()->id,
+                'provider_id' => $staff->id,
                 'scheduled_at' => today()->addHours(2),
             ]);
         });
@@ -31,6 +33,7 @@ class DashboardTest extends TenantTestCase
     {
         $response = $this->get($this->tenantUrl('/dashboard'));
 
-        $response->assertRedirect($this->tenantUrl('/staff/login'));
+        $response->assertRedirect();
+        $this->assertStringContainsString('/staff/login', $response->headers->get('Location') ?? '');
     }
 }

@@ -3,14 +3,18 @@
 namespace App\Models;
 
 use App\Enums\PatientDocumentCategory;
+use Database\Factories\PatientDocumentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class PatientDocument extends Model
 {
-    /** @use HasFactory<\Database\Factories\PatientDocumentFactory> */
+    use BelongsToTenant;
+
+    /** @use HasFactory<PatientDocumentFactory> */
     use HasFactory;
 
     protected $fillable = [

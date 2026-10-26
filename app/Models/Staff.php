@@ -15,18 +15,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Staff extends Authenticatable implements CanResetPasswordContract
 {
+    use BelongsToTenant;
+
     /** @use HasFactory<StaffFactory> */
     use CanResetPassword;
 
     use HasFactory;
     use Notifiable;
 
-    protected $table = 'users';
+    protected $table = 'tenant_users';
 
     protected $fillable = [
+        'tenant_id',
         'organization_staff_id',
         'first_name',
         'last_name',

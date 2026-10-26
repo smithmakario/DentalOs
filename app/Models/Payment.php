@@ -7,9 +7,11 @@ use App\Support\TenantMedia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Payment extends Model
 {
+    use BelongsToTenant;
     use HasFactory;
 
     protected $fillable = [

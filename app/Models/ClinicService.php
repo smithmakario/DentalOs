@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use Database\Factories\ClinicServiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class ClinicService extends Model
 {
-    /** @use HasFactory<\Database\Factories\ClinicServiceFactory> */
+    use BelongsToTenant;
+
+    /** @use HasFactory<ClinicServiceFactory> */
     use HasFactory;
 
     protected $fillable = [

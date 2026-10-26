@@ -41,7 +41,9 @@ return [
      * To configure their behavior, see the config keys below.
      */
     'bootstrappers' => [
-        DatabaseTenancyBootstrapper::class,
+        // Single-database tenancy: do not create/switch MySQL databases per branch.
+        // Tenant rows are isolated with tenant_id + BelongsToTenant on models.
+        // DatabaseTenancyBootstrapper::class,
         CacheTenancyBootstrapper::class,
         FilesystemTenancyBootstrapper::class,
         QueueTenancyBootstrapper::class,
@@ -199,7 +201,8 @@ return [
      */
     'migration_parameters' => [
         '--force' => true, // This needs to be true to run migrations in production.
-        '--path' => [database_path('migrations/tenant')],
+        // Tenant schema lives in the central migrations path (single-database tenancy).
+        '--path' => [database_path('migrations')],
         '--realpath' => true,
     ],
 
