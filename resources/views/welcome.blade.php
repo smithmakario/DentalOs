@@ -60,6 +60,7 @@
             }
         }
     </style>
+    @include('layouts.partials.ui-loading')
 </head>
 <body class="font-sans text-on-surface antialiased bg-surface">
 

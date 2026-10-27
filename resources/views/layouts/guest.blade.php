@@ -118,6 +118,7 @@
             background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%);
         }
     </style>
+    @include('layouts.partials.ui-loading')
 </head>
 <body class="font-body-md text-on-background min-h-screen flex flex-col antialiased">
     <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm flex justify-between items-center w-full px-6 py-3 h-16 fixed top-0 z-50 font-inter antialiased">

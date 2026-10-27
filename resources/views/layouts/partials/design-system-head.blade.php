@@ -110,3 +110,4 @@
     }
     body { font-family: 'Inter', sans-serif; }
 </style>
+@include('layouts.partials.ui-loading')

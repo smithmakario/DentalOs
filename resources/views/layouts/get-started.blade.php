@@ -36,6 +36,7 @@
             },
         };
     </script>
+    @include('layouts.partials.ui-loading')
 </head>
 <body class="font-sans text-on-surface antialiased bg-surface min-h-screen">
     <header class="border-b border-outline/30 bg-surface-elevated/90 backdrop-blur-md">
